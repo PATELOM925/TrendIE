@@ -1,8 +1,7 @@
 # QPE integration boundary
 
 **Status:** local QPE/AAT/GOAT libraries and fake integration fixtures exist. Awais's pinned
-`origin/awais/security-backend` source includes a gateway and HTTP bridge, but has not been
-integrated or validated against these adapters here. Contracts remain proposed pending owner
+`origin/awais/security-backend` source includes a gateway and HTTP bridge, and is merged into an unpublished integration candidate; its durable authority contract is still unaligned. Contracts remain proposed pending owner
 alignment. No real Qatom checkout is verified. Current evidence and blockers are in
 [CONTEXT.md](../CONTEXT.md) and [questions](questions.md).
 
@@ -48,21 +47,23 @@ run it against a real Qatom checkout.
 
 ## Awais gateway source and contract matrix
 
-The pinned Awais commit `5a9d3d4283e680ed8aa68de00fe8a677889af1be` adds a Fastify/Postgres gateway
-with intent, policy, verify/consume, result, audit and review routes, plus tests and a Qatom HTTP
-`GatewayAuthority` client. This is source evidence only: no test result, local endpoint run, combined
-Postgres check, deployed behavior, or owner acceptance is asserted. Awais has merged AAT, not GOAT.
+The original reviewed Awais head was `5a9d3d4`; the candidate now includes newer source `0b7d110`
+with both adapter HTTP clients and a cross-platform fixture. The submitted clients fabricated trusted
+binding fields from caller input. Both are now disabled at the compatibility boundary: claims deny,
+writes throw and recovery does not invent state. This is a safety mitigation, not completed gateway
+interoperation. Root and gateway offline suites are separate; real PostgreSQL endpoint tests remain
+unrun.
 
 | Concern | QPE / GOAT proposal | Awais submitted bridge/source | Alignment needed |
 |---|---|---|---|
-| Amount and asset | Qatom proposals use integer amount + scale 3 and `USD-TDN`; GOAT uses explicit chain asset/units. | Bridge serializes amount and maps `USD-TDN` to `USDC`. | Verify provider denomination and gateway contract; never silently reinterpret currency or scale. |
+| Amount and asset | Qatom proposals use integer amount + scale 3 and `USD-TDN`; GOAT uses explicit chain asset/units. | The former bridge mapped `USD-TDN` to `USDC`; that projection is removed and the bridge is disabled. | Verify provider denomination and gateway contract; never silently reinterpret currency or scale. |
 | Binding | QPE expects a persisted trusted binding with owner, intent/version, fingerprint, provider/item/seller, money, asset, chain, args and expiry. | GOAT's temporary HTTP bridge denies every claim without HTTP; the former client-side binding fabrication is removed. | Pending: authenticated claim endpoint returns or allows retrieval of server-persisted, independently checked binding and authoritative expiry. |
-| Consume outcomes | QPE has `claimed`, `already_claimed`, `denied`; uncertain dispatch remains unknown. | Bridge treats HTTP 403 as denied and all other non-200 responses as denied. | Agree status mapping, retry/timeout behavior, and unknown state if consume may have committed before response loss. |
+| Consume outcomes | QPE has `claimed`, `already_claimed`, `denied`; uncertain dispatch remains unknown. | Both legacy bridges deny before any HTTP claim. A future implementation needs bounded requests and uncertain-claim recovery. | Agree status mapping, retry/timeout behavior, and unknown state if consume may have committed before response loss. |
 | Result persistence | QPE requires durable result recording; failed persistence after possible provider write remains unknown. GOAT needs monotonic submission checkpoints and owner-scoped reconciliation reads. | GOAT bridge throws unsupported-contract errors for checkpoint and outcome writes, and returns no reconciliation record; these methods make no HTTP request and no local cache is treated as durable. | Pending: durable checked outcome-write endpoint, monotonic signed/broadcast checkpoint endpoint, and authenticated owner-scoped execution recovery read. Add QPE continuation contract. |
 | Identity and API auth | Trusted caller identity must be server-derived; authorization is owner and intent scoped. | Client sends `X-API-Key`; proposal payload includes intent/seller/product/amount/currency/destination/sourceRef. | Document service identity, key role/scope, authenticated owner binding and prohibition on client-controlled authority fields. |
 
-These are code-observed alignment concerns for the requested review, not a review verdict. Do not
-label them confirmed defects until the adversarial review evaluates the full gateway and contract.
+The original binding, unit and persistence defects were confirmed by the first adversarial review.
+Current mitigations and later gateway changes require fresh review; no updated verdict is implied.
 
 ## Gateway authority requirements
 

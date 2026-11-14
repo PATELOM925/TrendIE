@@ -39,16 +39,18 @@ they are distinct from root checks. Unit tests use a fake `gateway_test` URL and
 explicit `TEST_DATABASE_URL`. Its PostgreSQL database pathname must end in `_test`. The gateway
 replaces runtime `DATABASE_URL` only with that validated URL; it never falls back to
 `DATABASE_URL`. Missing or invalid configuration fails before pool construction, and errors omit
-URL contents. The integration tests run migrations and `TRUNCATE`; do not run them unless an
-isolated disposable test database is explicitly configured. Never run them with shared or
-production credentials. `gateway:test:integration` does not supply a URL: set `NODE_ENV=test`
+URL contents. The integration tests run migrations and `TRUNCATE`. The new source migration protects audit-log
+TRUNCATE, so the legacy database fixtures also need an owner-reviewed disposable-database reset
+strategy before that suite is usable. Do not run it until both that harness fix and an isolated
+disposable test database are ready. Never run them with shared or
+production credentials. `npm --prefix gateway run test:integration` does not supply a URL: set `NODE_ENV=test`
 and `TEST_DATABASE_URL=postgresql://.../something_test` explicitly after provisioning the local
 database. No database tests were run as part of safe-default checks.
 
 After interface alignment and code fixes, exercise synthetic register-intent → verify → consume →
 record-outcome → audit against the local HTTP service. Assert persisted owner/intent binding,
-one-use concurrency, checked response/error handling, and `unknown` on ambiguous writes. The
-current Qatom bridge is not ready to call an integrated contract: see [integration gaps](integration.md).
+one-use concurrency, checked response/error handling, and `unknown` on ambiguous writes. Both
+legacy HTTP bridges deliberately deny execution until the trusted authority contract exists: see [integration gaps](integration.md).
 
 ## Qatom
 
@@ -88,3 +90,27 @@ gateway contract are verified. Then test only in an authorized provider/test env
 synthetic intent values and a numeric spend ceiling. A quote followed by a separate checkout is
 not atomic price protection. Keep buyer decision, payment execution, settlement and fulfillment
 distinct in recorded results.
+
+## Current safe command set and remaining database gate
+
+```sh
+# After installing root dependencies and gateway dependencies separately:
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run gateway:typecheck
+npm run gateway:lint
+npm run gateway:test:unit
+npm run gateway:build
+```
+
+Gateway configuration now requires `CORS_ORIGINS` (for example `http://localhost:3000`) and distinct
+service keys; use synthetic local values for development. The server binds loopback by default.
+These commands do not establish owner-scoped authorization. Never expose the unfinished gateway
+publicly or treat its health response as proof of payment integration.
+
+The database owner must review `gateway/migrations/002_execution_outcome_integrity.sql`, the
+legacy status conversion and exact-hash history compatibility before application. No migration has
+been applied here. SQL integration fixtures remain unrun and include outdated assumptions about
+working HTTP bridges and audit-log resets. They are acceptance work to finish, not a passing suite.

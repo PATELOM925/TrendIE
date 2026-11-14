@@ -26,7 +26,8 @@ provider schema evidence or verified live checkout is recorded. Project Stages 1
   control points and acceptance. Sol reviews the built result and fixes. Final adversarial review
   starts only when Om explicitly requests a specified PR scope, using Claude API credits,
   `claude-opus-5-5`, medium effort. Do not run it automatically or substitute another provider.
-- Never merge, deploy, apply a migration or write to production. Report checks only when they exist
+- The user authorized reviewed/fixed integration merges into `develop` for this task. Never merge
+  to `main`, deploy, apply a database migration or write to production. Report checks only when they exist
   and have been run on the head under discussion; local checks do not prove live capabilities.
 - Do not add generator footers or co-author trailers.
 

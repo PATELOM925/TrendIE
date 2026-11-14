@@ -1,20 +1,23 @@
 # Current context
 
-**Checked:** 2026-11-14. Om PR #1/#2/#3 are merged to `develop` at `b576c12`. This candidate combines
-that integration with pinned Awais source `0b7d110` and a fail-closed GOAT HTTP bridge. Awais
-remains HOLD pending gateway/payment authority fixes; this candidate is not a live checkout or
-adversarial clearance. Qatom legacy HTTP behavior is fail-closed. Current published heads recorded for this integration
-are Om PR #1 QPE `7fe5e24c1668ee674223f0849a84f39150310966`, PR #2 AAT
-`a0d57e3580a565e00d5037a1d4241ed84db204d4`, PR #3 GOAT
-`139e5dab964bb77e47a8290d5e9cd880de7a03a8`, and Awais branch
-`origin/awais/security-backend` `5a9d3d4283e680ed8aa68de00fe8a677889af1be`. All three Om PRs are
-open. Awais's branch has no PR recorded here. Nassar's frontend and a Tirth branch are not visible.
-No new adversarial clearance is recorded; see [integration review](docs/reviews/2026-11-14-integration.md).
+**Checked:** 2026-11-14. Om PRs [#1](https://github.com/PATELOM925/TrendIE/pull/1),
+[#2](https://github.com/PATELOM925/TrendIE/pull/2) and
+[#3](https://github.com/PATELOM925/TrendIE/pull/3) were retargeted and merged into `develop`
+at `b576c12c44ec49ed0cd6b00fdc7b7c8c8d6c33b6` after the pinned adversarial review cleared them
+for local integration. `main` remains unchanged. The unpublished `om/develop-integration` candidate
+contains pinned Awais source `0b7d110`, both fail-closed legacy HTTP bridges, guarded database-test
+configuration and subsequent gateway hardening. It is pending fresh exact-head adversarial review;
+no clearance applies to these later changes. PR #4 remains the integration candidate PR.
 
-The owner-approved workflow is to combine the reviewed/fixed branches on `develop`, resolve and
-preview integration there, and keep `main` for production. PR #1 targets `develop`; #2 remains based
-on QPE and #3 on AAT until the owner handles sequential merge/retargeting. Do not merge to `main`,
-deploy, apply migrations, or write production under this workflow. See [the plan](docs/plan.md).
+The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
+See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
+The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
+integration. No Nassar frontend or Tirth branch was visible at the latest remote inspection.
+
+The authorized workflow is contributor PRs into `develop` for combined checks and previews, then
+an independently approved production PR to `main`. The owner has authorized this agent to merge
+reviewed and fixed work into `develop`. Do not merge to `main`, deploy, apply database migrations or
+write production under this authorization. See [the plan](docs/plan.md).
 
 ## Implementation and integration evidence
 
@@ -26,10 +29,17 @@ deploy, apply migrations, or write production under this workflow. See [the plan
 | Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
 | Person 5 / Nassar | No frontend branch visible. | UI and system integration against aligned public interfaces. |
 
-The source-level contract matrix is in [integration](docs/integration.md). It records concerns in
-the Qatom bridge (USD-TDN mapped to USDC, local binding/expiry fabrication, and unchecked outcome
-HTTP status) as items to resolve in review, not as a completed review verdict. Existing offline
-tests are local evidence only. Do not infer that the gateway test files passed.
+The [integration matrix](docs/integration.md) separates the original reviewed defects from current
+mitigations. Both legacy adapter HTTP authorities now deny claims and refuse writes before network
+access. They cannot fabricate a trusted binding, report an unsaved outcome as success or substitute
+an in-memory cache for durable recovery. This blocks unsafe execution; it does not implement the
+missing shared authority API.
+
+The candidate gateway now compares identity strings exactly, caps approval expiry by intent expiry,
+revalidates human review, serializes audit append ordering and creates intents transactionally with
+their audit entries. Local configuration uses loopback and an explicit CORS allowlist with distinct
+service keys. Owner-scoped authentication, the complete shared proposal/approval contract and durable
+adapter checkpoint/continuation endpoints remain open. Outcome integrity is implemented in the candidate with consumed-platform binding, checked state transitions and transactional write/audit regression coverage; it remains subject to re-review.
 
 Stages 1–3 are not complete: local slices exist across Persons 1–4, but owner approval, aligned
 contracts, combined local Postgres endpoint tests, model-based attack evidence, a GOAT receipt and
@@ -52,14 +62,19 @@ remains zero by default (Q003).
 
 ## Current local checks
 
-The recorded Om integrated-head checks were 60 Vitest tests and 4 PDF tests, plus typecheck, lint,
-build and dependency audit. They apply only to the stated Om head, not Awais's branch or a combined
-`develop` head. See [dependency audit](docs/dependencies.md) for unresolved release risks. Do not
-claim checks on another head until run there.
+The combined runtime source at `6ba9fcc4334f2eea5eeb0209311e6d8f9fb5ee99` passed root
+typecheck, lint, build and 65 tests; separate gateway typecheck, lint, build and 60 offline tests;
+and four Python PDF tests using `.venv-pdf`. This source includes the Qatom/GOAT safety boundaries,
+policy/audit/expiry changes and outcome transaction regression coverage. Docs-only changes after
+that source commit do not grant adversarial clearance. No database integration tests or migrations
+were run; database durability, concurrency and SQL source remain unverified in PostgreSQL.
+
+The dependency audit retains the AgentKit/Zod high finding from the checked dependency baseline;
+see [dependency audit](docs/dependencies.md). No paid calls or chain transactions have been made.
 
 ## Next owner actions
 
-1. Complete the pinned adversarial review and fix any accepted findings on their owning branches.
+1. Complete remaining outcome fixes, run combined checks and obtain fresh exact-head adversarial review.
 2. Align exact intent, approval, money/unit, execution, checkpoint, result, error and audit contracts
    across Awais, QPE and GOAT; preserve `unknown` whenever dispatch may have succeeded.
 3. After review/fixes, integrate the authorized slices on `develop`; resolve conflicts and run the
