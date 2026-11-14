@@ -36,7 +36,7 @@ Submitted by agent via `POST /verify`.
 }
 ```
 
-`proposalHash` = SHA-256 of canonical JSON (lexicographically sorted keys, trimmed/normalized strings, bigint-as-string), hex-encoded.
+`proposalHash` = SHA-256 of canonical JSON (lexicographically sorted keys, exact unchanged strings, bigint-as-string), hex-encoded.
 
 ## 3. InspectionResult (Person 4) — Advisory Only
 Can only make a decision stricter (e.g. `approve` -> `reject` on high severity flag, or `approve` -> `review` on medium/low severity flag), never looser.
@@ -110,3 +110,23 @@ Posted by payment adapters to `POST /executions/:id/result`. Idempotent on `exec
 - Approvals are single-use, short-TTL (e.g. 300s), and bound to `proposalHash` and `executionId`.
 - Audit log is strictly append-only with a SHA-256 hash chain; update and delete are forbidden.
 - No LLM in the authorization decision path.
+
+## Local hardening and compatibility gate (2026-11-14)
+
+Seller, product and destination comparisons now preserve case and whitespace. Intent validity
+ends at the expiry instant. Hashing preserves the original strings, including Unicode spelling.
+This changes legacy hashes for strings previously trimmed or normalized. Existing approvals and
+audit histories require an explicit versioned migration or a fresh disposable demo database;
+do not rewrite historical audit hashes or treat previous approvals as compatible. No migration
+or existing database has been changed by this patch.
+
+Audit appends require an existing transaction client and acquire the same transaction advisory
+lock before reading the chain head. Intent creation and its audit append share one transaction.
+Mocked query-order and rollback tests cover sequencing; real PostgreSQL concurrency remains
+unverified. Privileged database administrators can still alter schema or disable protections;
+this is tamper evidence, not immutable storage. TRUNCATE protection remains a separate gate.
+
+Local servers default to loopback and require an explicit CORS origin allowlist. Service keys
+must be distinct. Role keys still do not establish per-owner identity: this remains a release
+blocker. The legacy proposal schema lacks the full shared adapter binding. Both adapter HTTP
+bridges remain unsupported until that authority boundary is implemented and verified.

@@ -30,10 +30,11 @@ export function computeRowHash(
  * Computes hash chain by locking/reading the latest row hash.
  */
 export async function appendAuditLog(
-  client: pg.PoolClient | pg.Pool,
+  client: pg.PoolClient,
   entry: AuditEntryInput
 ): Promise<{ id: string; rowHash: string }> {
-  // Query latest row hash
+  await client.query("SELECT pg_advisory_xact_lock(hashtext('gateway.audit_log.chain'))");
+  // Serialize writers before reading the chain head.
   const latestRes = await client.query(
     'SELECT row_hash FROM audit_log ORDER BY id DESC LIMIT 1'
   );

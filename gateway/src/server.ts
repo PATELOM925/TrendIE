@@ -1,6 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
-import { Config, config as defaultConfig } from './config.js';
+import { Config, config as defaultConfig, parseCorsOrigins } from './config.js';
 import { authPlugin } from './auth/plugin.js';
 import { intentRoutes } from './routes/intents.js';
 import { verifyRoutes } from './routes/verify.js';
@@ -15,7 +15,7 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
   });
 
   await app.register(cors, {
-    origin: true,
+    origin: parseCorsOrigins(appConfig.CORS_ORIGINS),
   });
 
   await app.register(authPlugin);

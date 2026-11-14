@@ -5,7 +5,8 @@ dotenv.config();
 
 const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
-  HOST: z.string().default('0.0.0.0'),
+  HOST: z.string().default('127.0.0.1'),
+  CORS_ORIGINS: z.string().min(1, 'CORS_ORIGINS is required'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   APPROVAL_HMAC_SECRET: z.string().min(32, 'APPROVAL_HMAC_SECRET must be at least 32 characters'),
@@ -39,6 +40,9 @@ export function guardedTestDatabaseUrl(env: Record<string, string | undefined>):
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
+  const keys = ['API_KEY_AGENT', 'API_KEY_ADAPTER_GOAT', 'API_KEY_ADAPTER_QATOM', 'API_KEY_DASHBOARD', 'API_KEY_ADMIN'];
+  const present = keys.map((key) => env[key]).filter((value): value is string => Boolean(value));
+  if (new Set(present).size !== present.length) throw new Error('API key values must be unique');
   const runtimeEnv = env.NODE_ENV === 'test'
     ? { ...env, DATABASE_URL: guardedTestDatabaseUrl(env) }
     : env;
@@ -53,3 +57,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
 }
 
 export const config = loadConfig();
+
+export function parseCorsOrigins(value: string): string[] {
+  return value.split(',').map((origin) => origin.trim()).filter(Boolean);
+}

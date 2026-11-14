@@ -122,7 +122,7 @@ describe('Canonical JSON & Proposal Hashing', () => {
     expect(proposalHash(prop1)).toBe(proposalHash(prop2));
   });
 
-  it('normalizes string whitespace during hashing', () => {
+  it('preserves string whitespace during hashing', () => {
     const prop1 = {
       intentId: 'int_01H',
       seller: 'supplier-a',
@@ -138,7 +138,7 @@ describe('Canonical JSON & Proposal Hashing', () => {
       seller: '  supplier-a  ',
     };
 
-    expect(proposalHash(prop1)).toBe(proposalHash(prop2));
+    expect(proposalHash(prop1)).not.toBe(proposalHash(prop2));
   });
 
   it('changes hash when any field value changes', () => {

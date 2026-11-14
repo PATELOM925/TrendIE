@@ -1,4 +1,4 @@
-import { pool } from './client.js';
+import { pool, withTransaction } from './client.js';
 import { appendAuditLog } from '../audit/hashChain.js';
 import { runMigrations } from './migrate.js';
 
@@ -18,13 +18,12 @@ export async function seedDemoData() {
     createdAt: new Date().toISOString(),
   };
 
-  await pool.query(
+  await withTransaction(async (client) => {
+  const inserted = await client.query(
     `INSERT INTO intents (
       id, owner, seller, product, max_amount, currency, allowed_destinations, expiry, remaining_uses, created_at
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-    ON CONFLICT (id) DO UPDATE SET
-      max_amount = EXCLUDED.max_amount,
-      remaining_uses = EXCLUDED.remaining_uses`,
+    ON CONFLICT (id) DO NOTHING RETURNING id`,
     [
       demoIntent.id,
       demoIntent.owner,
@@ -39,12 +38,13 @@ export async function seedDemoData() {
     ]
   );
 
-  await appendAuditLog(pool, {
+  if (inserted.rows.length > 0) await appendAuditLog(client, {
     eventType: 'INTENT_SEEDED',
     entityType: 'intent',
     entityId: demoIntent.id,
     callerRole: 'admin',
     payload: demoIntent,
+  });
   });
 
   console.log('Demo seed data populated: Intent int_demo_01');

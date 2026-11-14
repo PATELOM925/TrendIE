@@ -6,6 +6,7 @@ describe('Server & Config Bootstrap', () => {
   it('validates environment config strictly', () => {
     const validEnv = {
       NODE_ENV: 'test',
+      CORS_ORIGINS: 'http://localhost:3000',
       TEST_DATABASE_URL: 'postgresql://postgres:password@localhost:5432/payment_guard_test',
       DATABASE_URL: 'postgresql://postgres:password@localhost:5432/test',
       APPROVAL_HMAC_SECRET: 'super-secret-key-that-is-at-least-32-chars-long',
@@ -56,5 +57,21 @@ describe('Server & Config Bootstrap', () => {
     expect(body.status).toBe('ok');
     expect(body.timestamp).toBeDefined();
     await app.close();
+  });
+
+  it('rejects duplicate API keys without disclosing their values', () => {
+    expect(() => loadConfig({ ...process.env, API_KEY_ADMIN: process.env.API_KEY_AGENT })).toThrow('API key values must be unique');
+  });
+
+  it('allows only configured browser origins', async () => {
+    const app = await buildServer();
+    try {
+      const allowed = await app.inject({ method: 'GET', url: '/health', headers: { origin: 'http://localhost:3000' } });
+      expect(allowed.headers['access-control-allow-origin']).toBe('http://localhost:3000');
+      const denied = await app.inject({ method: 'GET', url: '/health', headers: { origin: 'https://untrusted.example' } });
+      expect(denied.headers['access-control-allow-origin']).toBeUndefined();
+    } finally {
+      await app.close();
+    }
   });
 });

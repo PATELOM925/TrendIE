@@ -15,13 +15,13 @@ describe('Database & Audit Log Security', () => {
   });
 
   it('inserts and chains audit log rows with correct SHA-256 prev_hash', async () => {
-    const entry1 = await appendAuditLog(pool, {
+    const entry1 = await withTransaction((client) => appendAuditLog(client, {
       eventType: 'INTENT_CREATED',
       entityType: 'intent',
       entityId: 'int_01',
       callerRole: 'dashboard',
       payload: { maxAmount: '5000' },
-    });
+    }));
 
     const res1 = await pool.query('SELECT * FROM audit_log WHERE id = $1', [entry1.id]);
     expect(res1.rows[0].prev_hash).toBe(GENESIS_HASH);
@@ -39,13 +39,13 @@ describe('Database & Audit Log Security', () => {
     );
     expect(res1.rows[0].row_hash).toBe(recalculated);
 
-    const entry2 = await appendAuditLog(pool, {
+    const entry2 = await withTransaction((client) => appendAuditLog(client, {
       eventType: 'PROPOSAL_VERIFIED',
       entityType: 'proposal',
       entityId: 'prop_01',
       callerRole: 'agent',
       payload: { decision: 'approve' },
-    });
+    }));
 
     const res2 = await pool.query('SELECT * FROM audit_log WHERE id = $1', [entry2.id]);
     expect(res2.rows[0].prev_hash).toBe(entry1.rowHash);
