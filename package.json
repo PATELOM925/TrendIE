@@ -1,0 +1,40 @@
+{
+  "name": "trendie-qpe",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/contracts",
+    "packages/inspection",
+    "packages/agent",
+    "packages/qatom",
+    "packages/goat"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run",
+    "gateway:typecheck": "npm --prefix gateway run typecheck",
+    "gateway:lint": "npm --prefix gateway run lint",
+    "gateway:build": "npm --prefix gateway run build",
+    "gateway:test:unit": "npm --prefix gateway run test:unit",
+    "test:pdf": "python3 -m unittest discover -s services/pdf-inspection",
+    "qatom:probe": "node packages/qatom/dist/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "eslint": "^10.15.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0",
+    "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.8"
+    }
+  }
+}

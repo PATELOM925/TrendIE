@@ -135,3 +135,8 @@ A working AI purchasing agent can discover a product, propose a transaction, and
 The system demonstrably prevents an unauthorized purchase caused by prompt injection, records the evidence, and supports an optional GOAT escrow transaction with verifiable release conditions.
 
 **MVP priority:** Intent verification → GOAT payment → Qatom integration → attack demonstration → optional escrow.
+
+**Implementation sequence (2026-11-14):** Operational work is Qatom-first while Om covers Person
+3, then agent and attack work, with GOAT integration opportunistic through Stage 3. This sequence
+does not remove GOAT's P0 product priority. Escrow remains Stage 6, after the protected core flow.
+See [the current plan](docs/plan.md).

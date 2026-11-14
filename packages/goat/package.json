@@ -1,0 +1,18 @@
+{
+  "name": "@trendie/goat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": { "types": "./src/index.ts", "import": "./dist/index.js" } },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --max-warnings=0",
+    "test": "vitest run src/__tests__"
+  },
+  "dependencies": {
+    "@goatnetwork/agentkit": "0.3.0",
+    "@trendie/contracts": "0.1.0",
+    "viem": "^2.46.3"
+  }
+}

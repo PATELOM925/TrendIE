@@ -4,6 +4,28 @@
 
 **Priority:** Protected payment flow → attack demonstration → both payment integrations → optional GOAT escrow.
 
+## 2026-11-14 ownership and delivery override
+
+The role numbers and scopes below remain the original team plan. For the current work through
+Stage 3, Om primarily owns Person 3 (Qatom) while Tirth is unavailable. Person 4 (agent and attack)
+is next, and Person 2 (GOAT) is opportunistic. Nassar (repository contribution identity: Nasar)
+owns Person 5 frontend and system integration. Awais owns Person 1 security, backend and
+authorization. See the current [implementation plan](docs/plan.md).
+
+The original foundation began as documentation only. **Owner-approved stacked-work exception
+(2026-11-14):** Om is explicitly authorized to continue QPE through Stage 3 on shared branch
+`om/QPE`, including runtime workspace, contracts and Qatom library work. Later Om AAT and GOAT
+slices may base on QPE and target QPE until the owner merges that dependency. This does not imply
+Awais or Nassar agreed to current contract shapes. Keep integration dependencies visible at their
+owned boundaries. Each slice remains focused with small commits. No direct main writes, merges or
+deployments. Om owns merge and deployment gates.
+
+For runtime work, GPT 6.1 Sol handles orchestration, planning and implementation review. GPT 6
+Luna builds and fixes. Sol checks scope, interfaces, edge cases, control points and acceptance
+before runtime work; reviews the built result; and reviews fixes. A final adversarial review starts
+only when Om explicitly asks for the named PR scope. It uses Claude API credits, `claude-opus-5-5`,
+medium effort. Do not start that review automatically or substitute a provider.
+
 ## 1. Team Responsibilities
 
 | Person | Ownership | Concrete deliverables | Definition of Done |
