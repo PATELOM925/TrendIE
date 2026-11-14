@@ -4,6 +4,7 @@ import { withTransaction } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
 import { appendAuditLog } from '../audit/hashChain.js';
 import { isIntentActive } from '../approvals/expiry.js';
+import { verifyHmacSignature } from '../approvals/token.js';
 
 export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
   // POST /approvals/:id/consume (adapter roles only: adapter-goat, adapter-qatom, admin)
@@ -43,6 +44,22 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
           const rolePlatform = req.callerRole === 'adapter-goat' ? 'goat' : req.callerRole === 'adapter-qatom' ? 'qatom' : null;
           if (!rolePlatform || (approval.consumed_platform && approval.consumed_platform !== rolePlatform)) {
             return { ok: false, reason: 'PLATFORM_BINDING_REQUIRED' };
+          }
+
+          // 1a. Verify HMAC integrity of the approval record to guard against
+          //     forged or DB-layer-tampered rows (timing-safe comparison).
+          const hmacOk = verifyHmacSignature(
+            {
+              approvalId: approval.id,
+              executionId: approval.execution_id,
+              proposalHash: approval.proposal_hash,
+              intentId: approval.intent_id,
+              expiresAt: (approval.expires_at as Date).toISOString(),
+            },
+            approval.hmac_signature as string
+          );
+          if (!hmacOk) {
+            return { ok: false, reason: 'HMAC_INVALID' };
           }
 
           // 2. Lock intent for update

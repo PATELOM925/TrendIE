@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { pool } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
+import { verifyAuditChain } from '../audit/verifyChain.js';
 
 export const auditRoutes: FastifyPluginAsync = async (fastify) => {
   // GET /audit?intentId= (dashboard/admin only)
@@ -26,6 +27,52 @@ export const auditRoutes: FastifyPluginAsync = async (fastify) => {
 
       const res = await pool.query('SELECT * FROM audit_log ORDER BY id ASC LIMIT 100');
       return reply.status(200).send(res.rows);
+    }
+  );
+
+  // GET /audit/chain/verify — admin only; verifies the append-only hash chain
+  fastify.get(
+    '/audit/chain/verify',
+    {
+      preHandler: [requireRole('admin')],
+    },
+    async (_req, reply) => {
+      const result = await verifyAuditChain(pool);
+      // Always 200; the `valid` field inside the body communicates the outcome.
+      return reply.status(200).send(result);
+    }
+  );
+
+  // GET /intents — paginated list of intents (dashboard/admin only, max 100)
+  fastify.get(
+    '/intents',
+    {
+      preHandler: [requireRole('dashboard', 'admin')],
+    },
+    async (req, reply) => {
+      const query = req.query as { limit?: string; offset?: string };
+      const limit = Math.min(parseInt(query.limit ?? '20', 10), 100);
+      const offset = parseInt(query.offset ?? '0', 10);
+
+      const res = await pool.query(
+        'SELECT * FROM intents ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+        [limit, offset]
+      );
+
+      const intents = res.rows.map((row) => ({
+        id: row.id,
+        owner: row.owner,
+        seller: row.seller,
+        product: row.product,
+        maxAmount: row.max_amount.toString(),
+        currency: row.currency,
+        allowedDestinations: row.allowed_destinations,
+        expiry: row.expiry.toISOString(),
+        remainingUses: row.remaining_uses,
+        createdAt: row.created_at.toISOString(),
+      }));
+
+      return reply.status(200).send({ intents, limit, offset, count: intents.length });
     }
   );
 
