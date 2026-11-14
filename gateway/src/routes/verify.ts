@@ -14,6 +14,7 @@ import { verifyPolicy } from '../policy/verify.js';
 import { appendAuditLog } from '../audit/hashChain.js';
 import { createApprovalId, createExecutionId, generateHmacSignature } from '../approvals/token.js';
 import { config } from '../config.js';
+import { capApprovalExpiry } from '../approvals/expiry.js';
 
 const VerifyBodySchema = z
   .object({
@@ -126,7 +127,7 @@ export const verifyRoutes: FastifyPluginAsync = async (fastify) => {
         if (evaluation.decision === 'approve' && intent) {
           const approvalId = createApprovalId();
           const executionId = createExecutionId();
-          const expiresAt = new Date(now.getTime() + config.APPROVAL_TTL_SECONDS * 1000).toISOString();
+          const expiresAt = capApprovalExpiry(now, config.APPROVAL_TTL_SECONDS, intent.expiry);
           const hmac = generateHmacSignature({
             approvalId,
             executionId,
