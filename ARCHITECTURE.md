@@ -1,16 +1,18 @@
-# Architecture (proposed)
+# Architecture and implementation boundary
 
-This document distinguishes implemented local QPE libraries from the target system. Current
+This document separates implemented local QPE/AAT/GOAT libraries from the target system. Current
 verified status is in [CONTEXT.md](CONTEXT.md). The gateway remains Awais-owned and is not
-implemented here; the adapter ports are not a production authority.
+implemented here; adapter ports and the shared contract shapes remain proposals, not production
+authority.
 
 ## Target layout
 
-All paths below are proposed targets, not current repository files.
+The local paths shown below exist unless marked `apps/*`; their contents are libraries and fixtures.
+The gateway and frontend paths are proposed targets and do not exist in this repository.
 
 ```text
-apps/web/                 Next.js frontend (Nassar)
-apps/api/                 TypeScript Fastify gateway, security and authorization (Awais)
+apps/web/                 Proposed frontend (Nassar; not implemented)
+apps/api/                 Proposed gateway, security and authorization (Awais; not implemented)
 packages/contracts/       Shared schemas and types
 packages/qatom/           Qatom adapter (Om)
 packages/agent/           Discovery and proposal agent (Om)
@@ -18,6 +20,11 @@ packages/inspection/      Inspection interfaces and fixtures (Om)
 packages/goat/            GOAT adapter (Om, opportunistic)
 services/pdf-inspection/  Python and PyMuPDF local document inspection (Om)
 ```
+
+The root npm workspace covers `contracts`, `inspection`, `agent`, `qatom`, and `goat`. The
+`packages/integration.test.ts` fixture imports public package exports and composes agent proposal
+generation with the Qatom adapter. Its fake gateway authority is deliberately test-only and does
+not establish owner acceptance or live controls.
 
 The frontend talks to the gateway. The gateway owns trusted user identity, original intent,
 policy decisions, approval references, execution records and adapter dispatch. Adapters accept
