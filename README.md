@@ -1,14 +1,15 @@
 # TrendIE — Agentic Payment Guard
 
 **Status:** local QPE, AAT and GOAT libraries and offline integration fixtures are implemented.
-Awais has a published gateway branch that is not yet integrated or verified against these
-contracts. No Nassar frontend, authenticated Qatom schema or verified live payment integration is
+Awais gateway source and reviewed hardening are merged into develop for local/test integration.
+The complete adapter authority contract and real PostgreSQL behavior remain unverified. No Nassar frontend, authenticated Qatom schema or verified live payment integration is
 recorded. Project Stages 1–3 remain open.
 
 Start with:
 
 - [Contribution rules and ownership](AGENTS.md)
 - [Current status and next work](CONTEXT.md)
+- [Team handoff and starting commands](docs/team-handoff.md)
 - [Product requirements](PRD.md)
 - [Team roles](Division.md)
 - [Implementation plan](docs/plan.md)
