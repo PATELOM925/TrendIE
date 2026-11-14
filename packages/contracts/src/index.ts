@@ -20,7 +20,7 @@ const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() => z.union([
 ]));
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
-export const PurchaseProposalSchema = z.object({
+const PurchaseProposalObjectSchema = z.object({
   version: z.literal(CONTRACT_VERSION),
   ownerId: z.string().min(1).max(256),
   intentId: z.string().min(1).max(256),
@@ -37,6 +37,10 @@ export const PurchaseProposalSchema = z.object({
     context.addIssue({ code: 'custom', message: 'Qatom USD-TDN proposals require asset USD-TDN and scale 3', path: ['money', 'scale'] });
   }
 });
+export const PurchaseProposalSchema = z.preprocess((input) => {
+  canonicalJson(input);
+  return input;
+}, PurchaseProposalObjectSchema);
 export type PurchaseProposal = z.infer<typeof PurchaseProposalSchema>;
 
 export function canonicalJson(value: unknown): string {
@@ -62,9 +66,17 @@ export function canonicalJson(value: unknown): string {
     active.add(input);
     try {
     if (Array.isArray(input)) {
-      if (Object.getPrototypeOf(input) !== Array.prototype || Object.keys(input).length !== input.length) throw new TypeError('Canonical arrays must be dense and unmodified');
+      if (Object.getPrototypeOf(input) !== Array.prototype || Object.getOwnPropertySymbols(input).length) throw new TypeError('Canonical arrays must be plain and unmodified');
+      const descriptors = Object.getOwnPropertyDescriptors(input);
+      if (Object.entries(descriptors).some(([key, descriptor]) => key !== 'length' && (!('value' in descriptor) || !descriptor.enumerable))) throw new TypeError('Canonical arrays cannot contain accessors or hidden fields');
+      const keys = Object.keys(descriptors).filter((key) => key !== 'length');
+      if (keys.length !== input.length || keys.some((key, index) => key !== String(index))) throw new TypeError('Canonical arrays must be dense and unmodified');
       account('[');
-      const parts = input.map((v) => encode(v, depth + 1));
+      const parts = keys.map((key) => {
+        const descriptor = descriptors[key];
+        if (!descriptor || !('value' in descriptor)) throw new TypeError('Canonical arrays cannot contain accessors');
+        return encode(descriptor.value, depth + 1);
+      });
       if (parts.length > 1) account(','.repeat(parts.length - 1));
       account(']');
       return `[${parts.join(',')}]`;
@@ -94,8 +106,12 @@ export function canonicalJson(value: unknown): string {
 }
 
 export function proposalFingerprint(input: PurchaseProposal): string {
-  const proposal = PurchaseProposalSchema.parse(input);
+  const proposal = parseProposal(input);
   return createHash('sha256').update(canonicalizationVersion).update('\0').update(canonicalJson(proposal)).digest('hex');
+}
+
+export function parseProposal(input: unknown): PurchaseProposal {
+  return PurchaseProposalSchema.parse(input);
 }
 
 export const PaymentResultSchema = z.object({

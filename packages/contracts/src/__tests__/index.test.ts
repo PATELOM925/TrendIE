@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalJson, MoneySchema, PaymentResultSchema, proposalFingerprint, PurchaseProposalSchema } from './index.js';
+import { canonicalJson, MoneySchema, PaymentResultSchema, proposalFingerprint, PurchaseProposalSchema } from '../index.js';
 
 const proposal = {
   version: 1 as const, ownerId: 'buyer-1', intentId: 'intent-1', intentVersion: 2,
@@ -48,5 +48,19 @@ describe('payment contracts', () => {
     expect(() => canonicalJson(withSymbol)).toThrow();
     expect(() => canonicalJson(JSON.parse('{"__proto__":{"polluted":true}}'))).toThrow();
     expect(() => canonicalJson('x'.repeat(300_000))).toThrow();
+  });
+
+  it('bounds public proposal parsing and fingerprinting before schema recursion without invoking getters', () => {
+    let getterCalls = 0;
+    const accessorArgs = Object.defineProperty({}, 'quantity', { enumerable: true, get() { getterCalls += 1; return 1; } });
+    const accessorProposal = { ...proposal, providerArgs: accessorArgs };
+    expect(() => proposalFingerprint(accessorProposal as never)).toThrow();
+    expect(getterCalls).toBe(0);
+    const cyclic: Record<string, unknown> = {};
+    cyclic.self = cyclic;
+    expect(() => proposalFingerprint({ ...proposal, providerArgs: cyclic } as never)).toThrow();
+    let deep: unknown = 1;
+    for (let i = 0; i < 40; i += 1) deep = [deep];
+    expect(() => proposalFingerprint({ ...proposal, providerArgs: { deep } } as never)).toThrow();
   });
 });
