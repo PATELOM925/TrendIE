@@ -1,4 +1,4 @@
-import { PurchaseProposalSchema, type PurchaseProposal } from '@trendie/contracts';
+import { PurchaseProposalSchema, canonicalJson, type PurchaseProposal } from '@trendie/contracts';
 import { inspectText, type InspectionResult } from '@trendie/inspection';
 
 export type Listing = { itemId: string; sellerId: string; title: string; amount: string; scale: number; asset: string; description?: string; sourceRef?: string };
@@ -19,55 +19,12 @@ function validateTask(task: TrustedTask) {
   const identifier = (value: unknown, max: number) => typeof value === 'string' && value.length > 0 && value.length <= max;
   if (!identifier(task.ownerId, 256) || !identifier(task.intentId, 256) || !Number.isSafeInteger(task.intentVersion) || task.intentVersion < 1 || !['qatom', 'goat'].includes(task.platform) || !identifier(task.chain, 128) || !identifier(task.task, 2_000) || !/^(0|[1-9][0-9]*)$/.test(task.maxAmount) || task.maxAmount.length > 80 || !Number.isSafeInteger(task.maxScale) || task.maxScale < 0 || task.maxScale > 255 || !identifier(task.asset, 64)) throw new TypeError('Invalid trusted task');
 }
-function safePayload(value: unknown, label: string) {
-  const active = new Set<object>();
-  let nodes = 0;
-  let bytes = 0;
-  const account = (amount: number) => { bytes += amount; if (bytes > 200_000) throw new RangeError(`${label} payload limit exceeded`); };
-  const walk = (current: unknown, depth: number): void => {
-    nodes += 1;
-    if (nodes > 10_000 || depth > 32) throw new RangeError(`${label} payload limit exceeded`);
-    if (current === null || typeof current === 'boolean') { account(5); return; }
-    if (typeof current === 'string') {
-      if (Buffer.byteLength(current, 'utf8') > 200_000) throw new RangeError(`${label} payload limit exceeded`);
-      account(Buffer.byteLength(JSON.stringify(current), 'utf8'));
-      return;
-    }
-    if (typeof current === 'number') { if (!Number.isFinite(current) || (Number.isInteger(current) && !Number.isSafeInteger(current))) throw new TypeError(`${label} contains an invalid number`); account(24); return; }
-    if (typeof current !== 'object') throw new TypeError(`${label} contains an unsupported value`);
-    if (active.has(current)) throw new TypeError(`${label} contains a cycle`);
-    active.add(current);
-    try {
-      const array = Array.isArray(current);
-      const prototype = Object.getPrototypeOf(current);
-      if (array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null) throw new TypeError(`${label} contains a non-plain object`);
-      if (Object.getOwnPropertySymbols(current).length) throw new TypeError(`${label} contains symbol properties`);
-      const descriptors = Object.getOwnPropertyDescriptors(current);
-      const keys = Object.keys(descriptors);
-      if (array) {
-        const length = (descriptors.length?.value);
-        if (!Number.isSafeInteger(length) || length > 1000 || keys.length !== length + 1) throw new TypeError(`${label} contains an invalid array`);
-        account(2 + length);
-        for (let index = 0; index < length; index += 1) {
-          const descriptor = descriptors[String(index)];
-          if (!descriptor || !('value' in descriptor) || !descriptor.enumerable) throw new TypeError(`${label} contains an unsafe array`);
-          walk(descriptor.value, depth + 1);
-        }
-      } else {
-        account(2);
-        for (const [key, descriptor] of Object.entries(descriptors)) {
-          if (!('value' in descriptor) || !descriptor.enumerable || ['__proto__', 'constructor', 'prototype'].includes(key)) throw new TypeError(`${label} contains an unsafe property`);
-          if (Buffer.byteLength(key, 'utf8') > 200_000) throw new RangeError(`${label} payload limit exceeded`);
-          account(Buffer.byteLength(JSON.stringify(key), 'utf8') + 1);
-          walk(descriptor.value, depth + 1);
-        }
-      }
-    } finally { active.delete(current); }
-  };
-  walk(value, 0);
+export function validateBoundedPayload(value: unknown, label: string) {
+  const serialized = canonicalJson(value);
+  if (Buffer.byteLength(serialized, 'utf8') > 200_000) throw new RangeError(`${label} payload limit exceeded`);
 }
-function validateListings(value: unknown, maxListings: number): Listing[] {
-  safePayload(value, 'Discovery');
+export function validateListings(value: unknown, maxListings = 100): Listing[] {
+  validateBoundedPayload(value, 'Discovery');
   if (!Array.isArray(value) || value.length > maxListings) throw new RangeError('Discovery result limit exceeded');
   return value.map((entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new TypeError('Invalid discovery listing');
@@ -94,7 +51,7 @@ export async function runPurchaseWorkflow(input: { task: TrustedTask; query: str
     if (controller.signal.aborted) throw new Error('Workflow timed out');
     const raw = await race(input.model.propose({ task: input.task.task, listings, signal: controller.signal, maxTurns: limits.maxTurns, maxToolCalls: limits.maxToolCalls }));
     if (controller.signal.aborted) throw new Error('Workflow timed out');
-    safePayload(raw, 'Proposal');
+    validateBoundedPayload(raw, 'Proposal');
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new TypeError('Proposal is not an object');
     const candidate = raw as Record<string, unknown>;
     const allowedCandidate = ['itemId', 'sellerId', 'money', 'asset', 'providerArgs'];
