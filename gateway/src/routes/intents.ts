@@ -1,0 +1,92 @@
+import { FastifyPluginAsync } from 'fastify';
+import { IntentSchema } from '../schemas/index.js';
+import { pool } from '../db/client.js';
+import { requireRole } from '../auth/plugin.js';
+import { appendAuditLog } from '../audit/hashChain.js';
+
+export const intentRoutes: FastifyPluginAsync = async (fastify) => {
+  // POST /intents — Register a trusted intent (dashboard / admin only)
+  fastify.post(
+    '/intents',
+    {
+      preHandler: [requireRole('dashboard', 'admin')],
+    },
+    async (req, reply) => {
+      const parseResult = IntentSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: 'SCHEMA_INVALID',
+          message: 'Invalid intent payload',
+          details: parseResult.error.format(),
+        });
+      }
+
+      const intent = parseResult.data;
+
+      try {
+        await pool.query(
+          `INSERT INTO intents (
+            id, owner, seller, product, max_amount, currency, allowed_destinations, expiry, remaining_uses, created_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          [
+            intent.id,
+            intent.owner,
+            intent.seller,
+            intent.product,
+            intent.maxAmount,
+            intent.currency,
+            JSON.stringify(intent.allowedDestinations),
+            intent.expiry,
+            intent.remainingUses,
+            intent.createdAt,
+          ]
+        );
+
+        await appendAuditLog(pool, {
+          eventType: 'INTENT_CREATED',
+          entityType: 'intent',
+          entityId: intent.id,
+          callerRole: req.callerRole!,
+          payload: intent,
+        });
+
+        return reply.status(201).send(intent);
+      } catch (err: unknown) {
+        const error = err as { code?: string };
+        if (error.code === '23505') {
+          return reply.status(409).send({ error: 'INTENT_EXISTS', message: 'Intent already exists' });
+        }
+        return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to create intent' });
+      }
+    }
+  );
+
+  // GET /intents/:id — Read an intent (dashboard / admin only)
+  fastify.get(
+    '/intents/:id',
+    {
+      preHandler: [requireRole('dashboard', 'admin')],
+    },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      const res = await pool.query('SELECT * FROM intents WHERE id = $1', [id]);
+      if (res.rows.length === 0) {
+        return reply.status(404).send({ error: 'INTENT_NOT_FOUND', message: 'Intent not found' });
+      }
+
+      const row = res.rows[0];
+      return reply.status(200).send({
+        id: row.id,
+        owner: row.owner,
+        seller: row.seller,
+        product: row.product,
+        maxAmount: row.max_amount.toString(),
+        currency: row.currency,
+        allowedDestinations: row.allowed_destinations,
+        expiry: row.expiry.toISOString(),
+        remainingUses: row.remaining_uses,
+        createdAt: row.created_at.toISOString(),
+      });
+    }
+  );
+};
