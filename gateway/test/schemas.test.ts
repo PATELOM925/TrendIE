@@ -91,6 +91,7 @@ describe('Contracts & Schemas (CONTRACTS.md adherence)', () => {
       platform: 'goat' as const,
       txHashOrCheckoutRef: '0xabcdef123456',
       error: null,
+      evidence: { receipt: 'adapter-reported' },
     };
     expect(PaymentResultSchema.safeParse(payment).success).toBe(true);
   });

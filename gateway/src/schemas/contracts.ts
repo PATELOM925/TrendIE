@@ -96,17 +96,18 @@ export const VerificationDecisionSchema = z
 
 export type VerificationDecision = z.infer<typeof VerificationDecisionSchema>;
 
-export const PaymentStatusSchema = z.enum(['succeeded', 'failed', 'pending_unknown']);
+export const PaymentStatusSchema = z.enum(['pending_approval', 'submitting', 'pending', 'unknown', 'succeeded', 'failed', 'blocked', 'pending_unknown']);
 
 export const PaymentPlatformSchema = z.enum(['goat', 'qatom']);
 
 export const PaymentResultSchema = z
   .object({
-    executionId: z.string().min(1),
+    executionId: z.string().min(1).max(64),
     status: PaymentStatusSchema,
     platform: PaymentPlatformSchema,
-    txHashOrCheckoutRef: z.string().nullable(),
-    error: z.string().nullable(),
+    txHashOrCheckoutRef: z.string().max(512).nullable(),
+    error: z.string().max(2048).nullable(),
+    evidence: z.record(z.string(), z.unknown()).refine((v) => JSON.stringify(v).length <= 16384, 'Evidence must be at most 16 KiB'),
   })
   .strict();
 
