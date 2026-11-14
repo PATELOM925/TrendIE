@@ -226,11 +226,12 @@ describe('guarded Qatom execution adapter', () => {
   it('denies continuation before provider dispatch when authorization is revoked or price binding is unsupported', async () => {
     const revoked = harness({ paidAuthorized: false });
     expect((await revoked.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
-    expect(revoked.continuations).toBe(1);
+    expect(revoked.continuations).toBe(0);
     expect(revoked.calls).toBe(0);
     const unsupported = harness({ priceSupported: false });
     expect((await unsupported.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
     expect(unsupported.calls).toBe(0);
+    expect(unsupported.continuations).toBe(0);
     const defaultDenied = harness({ useDefaultPaidGate: true });
     expect((await defaultDenied.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
     expect(defaultDenied.continuations).toBe(0);

@@ -1,4 +1,4 @@
-import type { GatewayAuthority, TrustedCaller } from './execution.js';
+import type { GatewayAuthority } from './execution.js';
 
 export interface HttpGatewayClientOptions {
   baseUrl: string;
@@ -9,6 +9,7 @@ export interface HttpGatewayClientOptions {
 const UNSUPPORTED = 'Gateway contract does not provide a verified persisted QPE binding';
 
 export function createHttpGatewayAuthority(_options: HttpGatewayClientOptions): GatewayAuthority {
+  void _options;
   return {
     async claimExecution() {
       return { kind: 'denied', reason: UNSUPPORTED };
