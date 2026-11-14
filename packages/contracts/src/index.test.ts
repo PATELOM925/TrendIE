@@ -26,6 +26,7 @@ describe('payment contracts', () => {
 
   it('requires evidence for failed results and actual receipt fields for success', () => {
     expect(PaymentResultSchema.safeParse({ executionId: 'exec-1', platform: 'qatom', status: 'failed' }).success).toBe(false);
+    expect(PaymentResultSchema.safeParse({ executionId: 'exec-1', platform: 'qatom', status: 'failed', evidence: 'provider said failed' }).success).toBe(false);
     expect(PaymentResultSchema.safeParse({ executionId: 'exec-1', platform: 'qatom', status: 'succeeded', actual: { itemId: 'item-1', money: proposal.money } }).success).toBe(false);
     expect(PaymentResultSchema.safeParse({ executionId: 'exec-1', platform: 'qatom', status: 'succeeded', actual: { itemId: 'item-1', money: proposal.money, receiptId: 'tx-1' } }).success).toBe(true);
   });

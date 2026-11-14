@@ -107,14 +107,14 @@ export const PaymentResultSchema = z.object({
   reason: z.string().max(1_024).optional(),
   evidence: JsonValueSchema.optional(),
 }).strict().superRefine((result, context) => {
-  if (['succeeded', 'failed', 'pending', 'pending_approval'].includes(result.status) && !result.executionId) {
+  if (['submitting', 'succeeded', 'failed', 'pending', 'pending_approval'].includes(result.status) && !result.executionId) {
     context.addIssue({ code: 'custom', message: 'Provider outcomes require an execution ID', path: ['executionId'] });
   }
   if (result.status === 'succeeded' && (!result.actual?.receiptId || !result.actual.itemId)) {
     context.addIssue({ code: 'custom', message: 'Success requires checked provider receipt fields', path: ['actual'] });
   }
-  if (result.status === 'failed' && (result.evidence === undefined || result.evidence === null)) {
-    context.addIssue({ code: 'custom', message: 'Failure requires terminal evidence', path: ['evidence'] });
+  if (result.status === 'failed' && (!result.evidence || typeof result.evidence !== 'object' || Array.isArray(result.evidence))) {
+    context.addIssue({ code: 'custom', message: 'Failure requires structured terminal evidence', path: ['evidence'] });
   }
   if (result.status === 'pending_approval' && !result.providerReference) {
     context.addIssue({ code: 'custom', message: 'Provider approval requires a continuation reference', path: ['providerReference'] });
