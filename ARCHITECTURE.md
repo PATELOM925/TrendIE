@@ -1,0 +1,70 @@
+# Architecture (proposed)
+
+This document describes a target design, not existing code. Current verified state is in
+[CONTEXT.md](CONTEXT.md). Contracts await owner alignment in [docs/contracts.md](docs/contracts.md).
+
+## Target layout
+
+All paths below are proposed targets, not current repository files.
+
+```text
+apps/web/                 Next.js frontend (Nassar)
+apps/api/                 TypeScript Fastify gateway, security and authorization (Awais)
+packages/contracts/       Shared schemas and types
+packages/qatom/           Qatom adapter (Om)
+packages/agent/           Discovery and proposal agent (Om)
+packages/inspection/      Inspection interfaces and fixtures (Om)
+packages/goat/            GOAT adapter (Om, opportunistic)
+services/pdf-inspection/  Python and PyMuPDF local document inspection (Om)
+```
+
+The frontend talks to the gateway. The gateway owns trusted user identity, original intent,
+policy decisions, approval references, execution records and adapter dispatch. Adapters accept
+only gateway-controlled execution parameters. The agent receives narrow discovery and proposal
+tools. It never receives wallet secrets, approval authority or unrestricted checkout. Inspection
+can add evidence or request review; it cannot authorize or veto by itself.
+
+## Trust and payment flow
+
+The original intent is registered by an authenticated trusted owner and stored outside LLM context.
+The gateway binds the authenticated owner to each request on the server. It canonicalizes a
+proposal with a versioned algorithm and compares the exact seller or recipient, item, integer
+amount, asset/currency/chain, provider arguments and expiry against that intent.
+
+An approval is an opaque, one-use server-side reference authenticated through the gateway. It is
+not an `approved` boolean or hash supplied by the agent. Before dispatch, the gateway atomically
+claims or consumes the authorization and persists a durable execution record with a unique
+execution ID. The record is committed before the external provider call. No database transaction
+is assumed to span the provider rail.
+
+A decision (`approved`, `rejected`, or `review_required`) is distinct from payment status. Payment
+status records submission and provider outcome. A timeout or crash after possible dispatch is
+`unknown`; reconcile it before any retry. A known no-dispatch failure can be recorded separately.
+Never blindly retry or automatically restore an authorization after uncertain dispatch. Concurrent
+duplicates must not produce a second dispatch. Distributed exactly-once settlement is not promised.
+
+Provider checkout may not bind execution atomically to a previously checked quote. In particular,
+Qatom's documented checkout receives item/arguments and provides the price; strict price-cap
+prevention remains an unresolved P0 capability gate. A second quote read does not close the
+price-change race. Refuse unsupported live paths until a verified mitigation exists. See
+[contracts](docs/contracts.md) and [security](docs/security.md).
+
+## Money and evidence
+
+Represent amounts as validated integer strings plus asset scale. Qatom USD-TDN has three decimal
+places (milliunits, not cents). GOAT token amounts use token decimals and the selected chain. Reject
+floats, invalid precision and unknown scale; do not coerce unknown to zero.
+
+Record actual charged amount and item from provider evidence. Treat seller text and provider
+responses as untrusted inputs. A successful payment does not prove that a service or item was
+fulfilled. Settlement and fulfillment remain separate states. No automatic refund is promised.
+
+PDF inspection uses local synthetic documents with resource limits. Do not fetch URLs or execute
+document scripts. Findings are evidence, not a guarantee that every injection is detected.
+
+## Dependencies and ownership
+
+Dependencies point inward: UI → gateway public API → domain policy/contracts → provider adapters.
+The agent cannot bypass the gateway. Each policy rule has one owning module. Shared schemas belong
+in the contracts package after agreement. External providers sit behind adapters. The frontend
+must display provider outcomes and uncertainty without converting them into stronger claims.
