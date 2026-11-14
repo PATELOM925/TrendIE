@@ -56,9 +56,9 @@ Postgres check, deployed behavior, or owner acceptance is asserted. Awais has me
 | Concern | QPE / GOAT proposal | Awais submitted bridge/source | Alignment needed |
 |---|---|---|---|
 | Amount and asset | Qatom proposals use integer amount + scale 3 and `USD-TDN`; GOAT uses explicit chain asset/units. | Bridge serializes amount and maps `USD-TDN` to `USDC`. | Verify provider denomination and gateway contract; never silently reinterpret currency or scale. |
-| Binding | QPE expects a persisted trusted binding with owner, intent/version, fingerprint, provider/item/seller, money, asset, chain, args and expiry. | On HTTP 200 bridge fabricates most binding fields from the request and sets expiry to local now + 5 minutes; response supplies execution ID. | Gateway must return or let client retrieve server-persisted, independently checked binding and authoritative expiry. |
+| Binding | QPE expects a persisted trusted binding with owner, intent/version, fingerprint, provider/item/seller, money, asset, chain, args and expiry. | GOAT's temporary HTTP bridge denies every claim without HTTP; the former client-side binding fabrication is removed. | Pending: authenticated claim endpoint returns or allows retrieval of server-persisted, independently checked binding and authoritative expiry. |
 | Consume outcomes | QPE has `claimed`, `already_claimed`, `denied`; uncertain dispatch remains unknown. | Bridge treats HTTP 403 as denied and all other non-200 responses as denied. | Agree status mapping, retry/timeout behavior, and unknown state if consume may have committed before response loss. |
-| Result persistence | QPE requires durable result recording; failed persistence after possible provider write remains unknown. GOAT needs monotonic submission checkpoints and owner-scoped reconciliation reads. | Bridge posts a result but does not inspect HTTP status; no GOAT checkpoint/read methods are in this Qatom client. | Require checked write/provider response and durable audit; add explicit GOAT checkpoint/reconciliation API and QPE continuation contract. |
+| Result persistence | QPE requires durable result recording; failed persistence after possible provider write remains unknown. GOAT needs monotonic submission checkpoints and owner-scoped reconciliation reads. | GOAT bridge throws unsupported-contract errors for checkpoint and outcome writes, and returns no reconciliation record; these methods make no HTTP request and no local cache is treated as durable. | Pending: durable checked outcome-write endpoint, monotonic signed/broadcast checkpoint endpoint, and authenticated owner-scoped execution recovery read. Add QPE continuation contract. |
 | Identity and API auth | Trusted caller identity must be server-derived; authorization is owner and intent scoped. | Client sends `X-API-Key`; proposal payload includes intent/seller/product/amount/currency/destination/sourceRef. | Document service identity, key role/scope, authenticated owner binding and prohibition on client-controlled authority fields. |
 
 These are code-observed alignment concerns for the requested review, not a review verdict. Do not
@@ -79,6 +79,13 @@ The gateway branch has an implementation proposal; QPE does not yet have an alig
 implementation of this port or its database contract.
 
 ## GOAT authority port and recovery boundary
+
+The current HTTP client is a temporary fail-closed compatibility bridge, not a gateway
+implementation: claims are denied without network access, checkpoint/outcome writes throw an
+unsupported-contract error, and reconciliation returns no record. GOAT gateway integration remains
+unsupported until the trusted stored-binding claim, durable checkpoint/outcome writes, and
+owner-scoped read-only recovery endpoints exist and are verified. No in-memory cache substitutes
+for those server records.
 
 `@trendie/goat` has a separate proposed `GoatGatewayAuthority` shape in
 `packages/goat/src/types.ts`:

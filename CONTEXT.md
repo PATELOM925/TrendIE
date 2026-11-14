@@ -1,7 +1,7 @@
 # Current context
 
 **Checked:** 2026-11-14. Om PR #1/#2/#3 are merged to `develop` at `b576c12`. This candidate combines
-that integration with pinned Awais source `0b7d110` and scoped gateway test-safety changes. Awais
+that integration with pinned Awais source `0b7d110` and a fail-closed GOAT HTTP bridge. Awais
 remains HOLD pending gateway/payment authority fixes; this candidate is not a live checkout or
 adversarial clearance. Qatom legacy HTTP behavior is fail-closed. Current published heads recorded for this integration
 are Om PR #1 QPE `7fe5e24c1668ee674223f0849a84f39150310966`, PR #2 AAT
@@ -21,7 +21,7 @@ deploy, apply migrations, or write production under this workflow. See [the plan
 | Slice | Evidence at pinned head | Still needed |
 |---|---|---|
 | Person 1 / Awais gateway | Published branch contains Fastify/Postgres intent, policy, verify/consume, result, audit and review routes, tests and a Qatom HTTP bridge. This establishes submitted source, not passing tests or live behavior. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
-| Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; native transfer path locally compiled and fake-tested. | Gateway contract alignment, configured test wallet, separately authorized bounded testnet action and checked receipt. |
+| Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
 | Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
 | Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
 | Person 5 / Nassar | No frontend branch visible. | UI and system integration against aligned public interfaces. |

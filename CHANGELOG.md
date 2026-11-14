@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Make the GOAT HTTP authority bridge fail closed: claims deny without HTTP; checkpoint and outcome
+  writes report the unsupported contract; reconciliation returns no record. Document required
+  trusted stored-binding, durable write, and owner-scoped recovery endpoints as pending.
+
 - Integrate the Om stack in topological order: QPE → AAT → GOAT. PR #1 is QPE → `main`, PR #2 is
   AAT → QPE, and the local GOAT head is planned for PR #3 → AAT. The owner controls retargeting and
   merges; these layers do not merge automatically.
