@@ -1,10 +1,10 @@
-# Gateway Contracts (v0.1 draft)
+# Gateway Contracts (v0.1)
 
-Owner: Person 1 (Security & Backend). Any change here must be announced to Persons 2–5.
-Rules: all money is an **integer in minor units, encoded as a string** in JSON. Timestamps are ISO-8601 UTC.
-Unknown fields are rejected. Currency values are never compared across currencies.
+Owner: Person 1 (Security & Backend).
+Rules: All money is an **integer in minor units, encoded as a string** in JSON and handled as `bigint` in code. Timestamps are ISO-8601 UTC. Unknown fields are rejected (`.strict()`). Currency values are never compared across currencies.
 
-## Intent (owner: Person 1) — immutable once created
+## 1. Intent (Owner: Person 1) — Immutable Once Created
+Registered only via trusted user/dashboard path (`POST /intents`). Agents **cannot** register or modify intents.
 
 ```json
 {
@@ -21,7 +21,8 @@ Unknown fields are rejected. Currency values are never compared across currencie
 }
 ```
 
-## PurchaseProposal (Persons 1 + 4)
+## 2. PurchaseProposal (Persons 1 + 4)
+Submitted by agent via `POST /verify`.
 
 ```json
 {
@@ -35,9 +36,10 @@ Unknown fields are rejected. Currency values are never compared across currencie
 }
 ```
 
-`proposalHash` = SHA-256 of canonical JSON (sorted keys, bigint-as-string, trimmed/normalized strings), hex-encoded.
+`proposalHash` = SHA-256 of canonical JSON (lexicographically sorted keys, trimmed/normalized strings, bigint-as-string), hex-encoded.
 
-## InspectionResult (Person 4) — advisory; can only make a decision stricter
+## 3. InspectionResult (Person 4) — Advisory Only
+Can only make a decision stricter (e.g. `approve` -> `reject` on high severity flag, or `approve` -> `review` on medium/low severity flag), never looser.
 
 ```json
 {
@@ -48,7 +50,8 @@ Unknown fields are rejected. Currency values are never compared across currencie
 }
 ```
 
-## VerificationDecision (Person 1)
+## 4. VerificationDecision (Person 1)
+Returned by `POST /verify`. `authorizationRef` is present **only** when `decision = approve`.
 
 ```json
 {
@@ -61,11 +64,23 @@ Unknown fields are rejected. Currency values are never compared across currencie
 }
 ```
 
-Reason codes: `OK`, `INTENT_NOT_FOUND`, `INTENT_EXPIRED`, `INTENT_EXHAUSTED`, `SELLER_MISMATCH`, `PRODUCT_MISMATCH`,
-`AMOUNT_EXCEEDS_MAX`, `AMOUNT_INVALID`, `CURRENCY_MISMATCH`, `DESTINATION_NOT_ALLOWED`, `INJECTION_FLAGGED`,
-`SCHEMA_INVALID`, `INTERNAL_ERROR`. `authorizationRef` is present only when `decision = approve`.
+Reason codes:
+- `OK`
+- `INTENT_NOT_FOUND`
+- `INTENT_EXPIRED`
+- `INTENT_EXHAUSTED`
+- `SELLER_MISMATCH`
+- `PRODUCT_MISMATCH`
+- `AMOUNT_EXCEEDS_MAX`
+- `AMOUNT_INVALID`
+- `CURRENCY_MISMATCH`
+- `DESTINATION_NOT_ALLOWED`
+- `INJECTION_FLAGGED`
+- `SCHEMA_INVALID`
+- `INTERNAL_ERROR`
 
-## PaymentResult (Persons 2 + 3)
+## 5. PaymentResult (Persons 2 + 3)
+Posted by payment adapters to `POST /executions/:id/result`. Idempotent on `executionId`.
 
 ```json
 {
@@ -77,23 +92,21 @@ Reason codes: `OK`, `INTENT_NOT_FOUND`, `INTENT_EXPIRED`, `INTENT_EXHAUSTED`, `S
 }
 ```
 
-## Endpoints
+## 6. Endpoints & Caller Role Matrix
 
-| Method + path | Caller role | Purpose |
-|---|---|---|
-| `POST /intents` | user / dashboard | Register a trusted intent |
-| `GET /intents/:id` | user / dashboard | Read an intent |
-| `POST /verify` | agent | Body: `{ proposal, inspection? }` → `VerificationDecision` (+ approval handle on approve) |
-| `POST /approvals/:id/consume` | adapter-goat, adapter-qatom | Body: full proposal about to execute. Atomically consumes the approval iff hash matches, unexpired and unused. Returns `{ executionId }` or 403 |
-| `POST /executions/:id/result` | adapter-goat, adapter-qatom | Body: `PaymentResult`. Idempotent on `executionId` |
-| `GET /audit?intentId=` | dashboard | Append-only audit entries |
-| `GET /decisions/:id` | dashboard | One decision with evidence |
-| `POST /reviews/:decisionId/resolve` | human approver | Convert `review` → approve/reject; never overrides a hard reject |
+| Method + Path | Permitted Caller Roles | Request Body | Description |
+|---|---|---|---|
+| `POST /intents` | `dashboard`, `admin` | `Intent` | Register a trusted, immutable Intent |
+| `GET /intents/:id` | `dashboard`, `admin` | — | Read an Intent |
+| `POST /verify` | `agent`, `admin` | `{ proposal, inspection? }` | Pure deterministic verification. Issues short-TTL Approval if approved |
+| `POST /approvals/:id/consume` | `adapter-goat`, `adapter-qatom`, `admin` | `PurchaseProposal` | Atomically consumes the approval iff hash matches, unexpired and unused. Returns `{ executionId }` or 403 |
+| `POST /executions/:id/result` | `adapter-goat`, `adapter-qatom`, `admin` | `PaymentResult` | Records settlement outcome. Idempotent on `executionId` |
+| `GET /audit?intentId=` | `dashboard`, `admin` | — | Reads cryptographically chained audit log rows |
+| `GET /decisions/:id` | `dashboard`, `admin` | — | Reads decision details and reason codes |
+| `POST /reviews/:decisionId/resolve` | `dashboard`, `admin` | `{ resolution, notes }` | Human approver converts `review` -> `approve`/`reject`. Hard reject can never be overridden |
 
-Errors: `{ "error": "CODE", "message": "..." }`. Any denial is a non-2xx response; adapters must treat anything
-other than an explicit 200 from `/consume` as "do not pay".
-
-## Security invariant
-
-The executed payment must match the exact approved proposal. Neither the agent nor an adapter may modify approved
-fields. Approvals are single-use, short-lived, and bound to `proposalHash` and `executionId`.
+## 7. Security Invariants
+- The executed payment must match the exact approved proposal. Neither agent nor adapter may change approved fields.
+- Approvals are single-use, short-TTL (e.g. 300s), and bound to `proposalHash` and `executionId`.
+- Audit log is strictly append-only with a SHA-256 hash chain; update and delete are forbidden.
+- No LLM in the authorization decision path.
