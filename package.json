@@ -27,6 +27,7 @@
     "gateway:build": "npm --prefix gateway run build",
     "gateway:test:unit": "npm --prefix gateway run test:unit",
     "test:pdf": "python3 -m unittest discover -s services/pdf-inspection",
+    "demo:attack": "node scripts/demo-attack.mjs",
     "qatom:probe": "node packages/qatom/dist/cli.js"
   },
   "devDependencies": {
