@@ -2,9 +2,21 @@
 
 ## Unreleased
 
-- Integrate the Om stack in topological order: QPE → AAT → GOAT. PR #1 is QPE → `main`, PR #2 is
-  AAT → QPE, and the local GOAT head is planned for PR #3 → AAT. The owner controls retargeting and
-  merges; these layers do not merge automatically.
+- Incorporate Awais HMAC integrity verification and audit/intent-list endpoints; retain expiry,
+  consumed-platform and transactional outcome guards through the merge.
+- Sanitize unexpected gateway errors, bound database-backed proposal fields, use prototype-safe
+  API-key lookup, reject unused GOAT action metadata and remove the conflicting root pnpm workspace.
+- Correct the prior Node runtime claim: the named Homebrew path was Node 25. Actual Node 22.23.4
+  is available through fnm; validate the executable version before running checks.
+
+- Make the GOAT HTTP authority bridge fail closed: claims deny without HTTP; checkpoint and outcome
+  writes report the unsupported contract; reconciliation returns no record. Document required
+  trusted stored-binding, durable write, and owner-scoped recovery endpoints as pending.
+
+- Merge reviewed Om PRs #1–#3 into `develop` in dependency order; retain `main` as the production gate.
+- Add guarded database test configuration and separate gateway checks. Harden exact policy identity,
+  expiry boundaries, review revalidation, transactional intent/audit writes, CORS and distinct role keys.
+  Combined validation and fresh adversarial review remain required.
 - Add the `@trendie/goat` workspace package with guarded native Testnet3 transfer, durable signed
   and broadcast checkpoint hooks, post-checkpoint/pre-broadcast authorization revalidation, and
   read-only reconciliation of signed or broadcast hashes. Signed-only unknown and mismatched cases
@@ -13,7 +25,7 @@
   test-only authority, atomic-claim behavior and fake receipt. It is not the Awais gateway and does
   not make provider calls.
 - Extend root workspace coverage and document local stage implementation separately from owner and
-  live evidence. Awais's gateway and Nassar's frontend are not implemented here. Authenticated
+  live evidence. Awais's gateway is present in the unpublished candidate; Nassar's frontend is pending. Authenticated
   Qatom schemas, atomic price limits and verified checkout remain open.
 - Scope a `minimatch@11.0.8` override to the `typescript-estree` dependency path and remove the
   vulnerable nested 10.2.6 lock entry. The full audit no longer reports the seven moderate findings;

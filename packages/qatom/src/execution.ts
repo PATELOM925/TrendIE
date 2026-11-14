@@ -59,7 +59,7 @@ export interface BoundCheckoutCapability {
 }
 
 export interface PaidExecutionGate {
-  isAuthorized(input: { caller: TrustedCaller; approvalReference: string; proposal: PurchaseProposal }): Promise<boolean>;
+  isAuthorized(input: { caller: TrustedCaller; approvalReference: string; proposal?: PurchaseProposal }): Promise<boolean>;
 }
 
 export const disabledPaidExecution: PaidExecutionGate = { async isAuthorized() { return false; } };
@@ -163,6 +163,16 @@ export function createQatomExecutionAdapter(deps: {
       return persist(await assessProviderResult(deps.receiptVerifier, response, binding, proposal));
     },
     async continue(input) {
+      let tools: Awaited<ReturnType<QatomExecutionTransport['listTools']>>;
+      try { tools = await deps.transport.listTools(); } catch { return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Checkout tool discovery failed' }; }
+      const tool = tools.find((candidate) => candidate.name === deps.checkoutToolName);
+      if (!tool) return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Checkout tool is unavailable' };
+      let preclaimPaidAllowed = false;
+      try { preclaimPaidAllowed = await paidExecution.isAuthorized({ caller: input.caller, approvalReference: input.approvalReference }); } catch { preclaimPaidAllowed = false; }
+      if (!preclaimPaidAllowed) return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Paid execution is disabled or lacks a numeric spend authorization' };
+      let preclaimPriceBound = false;
+      try { preclaimPriceBound = await deps.boundPrice.supportsAtomicPriceBound({ toolName: tool.name, toolSchema: tool.inputSchema }); } catch { preclaimPriceBound = false; }
+      if (!preclaimPriceBound) return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Atomic approved-price binding is unverified' };
       let claim: Awaited<ReturnType<GatewayAuthority['claimContinuation']>>;
       try { claim = await deps.authority.claimContinuation(input); }
       catch { return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Gateway authority could not claim continuation' }; }
@@ -177,10 +187,6 @@ export function createQatomExecutionAdapter(deps: {
         return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Continuation binding mismatch' });
       }
       if (binding.proposalFingerprint !== fingerprint) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Continuation proposal fingerprint mismatch' });
-      let tools: Awaited<ReturnType<QatomExecutionTransport['listTools']>>;
-      try { tools = await deps.transport.listTools(); } catch { return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Checkout tool discovery failed' }); }
-      const tool = tools.find((candidate) => candidate.name === deps.checkoutToolName);
-      if (!tool) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Checkout tool is unavailable' });
       let paidAllowed = false;
       try { paidAllowed = await paidExecution.isAuthorized({ caller: input.caller, approvalReference: input.approvalReference, proposal: expected }); } catch { paidAllowed = false; }
       if (!paidAllowed) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Paid execution is disabled or lacks a numeric spend authorization' });

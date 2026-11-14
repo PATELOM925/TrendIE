@@ -20,9 +20,10 @@ is retained as a work breakdown, not a verified current team-size rule.
 
 ## Organizer and team evidence
 
-Organizer email corrected the event end to Sunday Nov 15 at 5 PM EST; an older 8 PM time is stale.
-Saturday is hybrid and Sunday demos are in person. The event end is not the submission cutoff.
-Exact cutoff, pitch time and judging rubric remain unknown.
+Organizer email confirms event end Sunday Nov 15 at 5 PM EST; an older 8 PM time is stale. The
+BuilderBase event page UI displayed “Live, submissions close tomorrow at 10:00 EST” when observed
+Nov 14, implying a Nov 15 10:00 EST submission cutoff. This is a UI observation, not organizer
+confirmation. The event end is distinct. Exact pitch schedule and judging rubric remain unknown.
 
 Organizer WhatsApp announcements point to a Canva deck and announce a Qatom workshop Saturday at
 about 10:30–11:30 AM at Highline Beta. The deck content was not readable during verification, so
@@ -30,5 +31,8 @@ these details are reported as announcements, not full event instructions. Team m
 Om covers Persons 3 and 4 and that Nassar targets a Stage 1 minimum and Stage 2 integration goal;
 absolute date/time and timezone for that meeting are unverified.
 
-Authenticated BuilderBase browser access reached a login, but the event route exposed no readable
-page content. No dashboard details are claimed. No external messages were sent or accounts changed.
+Comet showed Qatom and Backboard dashboard tab titles and URLs, but their content was not readable;
+sign-in, plan, credits, API keys and buyer wallet are not verified. The BuilderBase resources route
+redirected to authentication; resource contents are not confirmed. The event-site page content
+displayed the cutoff text above. Do not claim account or dashboard access. See the unsent
+[sponsor questions](sponsor-questions.md). No external messages were sent or accounts changed.

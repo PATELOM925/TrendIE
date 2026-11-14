@@ -2,9 +2,10 @@
 
 Read this entry point before changing the repository. The integrated local `om/GOAT` head contains
 the Node 22 QPE/AAT/GOAT workspace, proposed shared contracts, a read-only Qatom MCP client, guarded
-adapters, PDF inspection and offline integration fixtures. There is no Awais-owned gateway or
-Nassar frontend, authenticated provider schema evidence or verified live checkout. Project Stages
-1–3 remain open. Read [CONTEXT.md](CONTEXT.md) and do not describe fake-tested behavior as live.
+adapters, PDF inspection and offline integration fixtures. Awais has a pinned published gateway
+branch, not yet integrated or verified against these contracts. No Nassar frontend, authenticated
+provider schema evidence or verified live checkout is recorded. Project Stages 1–3 remain open. Read
+[CONTEXT.md](CONTEXT.md) and do not describe fake-tested behavior as live.
 
 ## Owners and gates
 
@@ -13,9 +14,10 @@ Nassar frontend, authenticated provider schema evidence or verified live checkou
   (Person 4); GOAT (Person 2) is opportunistic through Stage 3.
 - Nassar (repository contribution identity Nasar) owns frontend and system integration (Person 5).
 - Preserve original role numbers and scopes. See [Division.md](Division.md) and [the plan](docs/plan.md).
-- No direct writes to `main`. Use focused PRs with small objective commits. The planned stack is #1
-  QPE → `main`, #2 AAT → QPE, #3 GOAT → AAT. The owner controls retargeting, merge and deployment;
-  no contributor merges or deploys. Do not auto-merge stack layers.
+- `develop` is the authorized integration/preview branch; `main` is production-only. Use focused
+  PRs with small objective commits. PR #1 targets `develop`; #2 AAT → QPE and #3 GOAT → AAT retain
+  their dependencies until owner-controlled sequential integration. The owner controls retargeting
+  and merge; contributors do not deploy or merge to `main`. Do not auto-merge stack layers.
 - The owner-approved 2026-11-14 stacked-work exception is recorded in [Division.md](Division.md):
   Om's AAT may build on QPE and GOAT may build on AAT while dependencies await owner merge. This
   does not imply Awais or Nassar accepted these contract shapes.
@@ -24,7 +26,8 @@ Nassar frontend, authenticated provider schema evidence or verified live checkou
   control points and acceptance. Sol reviews the built result and fixes. Final adversarial review
   starts only when Om explicitly requests a specified PR scope, using Claude API credits,
   `claude-opus-5-5`, medium effort. Do not run it automatically or substitute another provider.
-- Never merge, deploy, apply a migration or write to production. Report checks only when they exist
+- The user authorized reviewed/fixed integration merges into `develop` for this task. Never merge
+  to `main`, deploy, apply a database migration or write to production. Report checks only when they exist
   and have been run on the head under discussion; local checks do not prove live capabilities.
 - Do not add generator footers or co-author trailers.
 
