@@ -8,10 +8,12 @@ authority.
 ## Target layout
 
 The local paths shown below exist unless marked `apps/*`; their contents are libraries and fixtures.
-The gateway lives in its separate pnpm project at gateway/. The frontend remains a proposed target.
+The gateway lives in its separate pnpm project at gateway/. The frontend has a local Next.js
+implementation; its authentication, persisted evidence reconstruction and provider execution remain
+open.
 
 ```text
-apps/web/                 Proposed frontend (Nassar; not implemented)
+apps/web/                 Next.js Guard Console and server-side gateway routes (Nassar; local/test)
 gateway/                  Fastify/Postgres security gateway (Awais; local/test source, SQL unverified)
 packages/contracts/       Shared schemas and types
 packages/qatom/           Qatom adapter (Om)

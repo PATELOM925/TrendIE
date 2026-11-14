@@ -19,9 +19,9 @@ develop to main remains a separate owner gate. See [team handoff](team-handoff.m
 | Person 2 / GOAT, opportunistic | Configure a GOAT Testnet3 wallet. |
 | Person 3 / Qatom / QPE, Om | Verify authenticated MCP access and available tools. |
 | Person 4 / AAT, Om | Create clean and malicious listing fixtures. |
-| Person 5 / Nassar | Scaffold frontend and shared deployment. |
+| Person 5 / Nassar | Scaffold frontend and shared deployment. **Local evidence:** Next.js App Router workspace under `apps/web`, bound to port 3001, with server-only gateway configuration and a local Guard Console. |
 
-**Stage checkpoint:** Local implementation evidence: QPE workspace/contracts/adapters; AAT clean and malicious synthetic fixtures; GOAT Testnet3 adapter config without a wallet. Live/owner evidence: authenticated Qatom tools are unverified (unauthenticated endpoint returned 401); no GOAT wallet was configured; Awais policy source and offline tests are merged, but shared contract acceptance remains open; Nassar frontend is pending. Stage 1 remains pending. Exact-price P0 blocks Qatom checkout, not local development.
+**Stage checkpoint:** Local implementation evidence includes the Person 5 Next.js scaffold. Live/owner evidence: authenticated Qatom tools are unverified (unauthenticated endpoint returned 401); no GOAT wallet was configured; Awais policy source and offline tests are merged, but shared contract acceptance remains open. Stage 1 remains pending. Exact-price P0 blocks Qatom checkout, not local development.
 
 ## Stage 2 — Core flow (pending)
 
@@ -31,9 +31,9 @@ develop to main remains a separate owner gate. See [team handoff](team-handoff.m
 | Person 2 / GOAT, opportunistic | Make a standalone GOAT Testnet3 payment and verify its receipt. |
 | Person 3 / Qatom / QPE, Om | Implement discovery and checkout subject to provider price-binding and spend gates. |
 | Person 4 / AAT, Om | Build the purchasing agent and structured proposal generation. |
-| Person 5 / Nassar | Connect intent and payment screens. |
+| Person 5 / Nassar | Connect intent and payment screens. **Local evidence:** intent registration/listing and synthetic proposal decisions use the local gateway; no payment executes from the UI. |
 
-**Stage checkpoint:** Local implementation evidence: AAT proposal workflow and PDF inspection use local fixtures; GOAT native transfer compiles and its fake wallet path is tested; Qatom read-only client supports discovery shape. AAT/PDF checks ran locally, but no live model call occurred. Live evidence: no GOAT transaction, no authenticated Qatom discovery and no approved numeric ceiling (user only said “keep it low”). Stage 2 remains pending. Qatom checkout stays disabled pending exact price binding, receipt facts, gateway and paid authorization.
+**Stage checkpoint:** Local implementation evidence: AAT proposal workflow and PDF inspection use local fixtures; GOAT native transfer compiles and its fake wallet path is tested; Qatom read-only client supports discovery shape; the Person 5 console displays gateway decisions and server-generated text inspection evidence. The frontend still lacks PDF upload/extraction and persistent proposal/evidence reconstruction. Live evidence: no GOAT transaction, no authenticated Qatom discovery and no approved numeric ceiling (user only said “keep it low”). Stage 2 remains pending. Qatom checkout stays disabled pending exact price binding, receipt facts, gateway and paid authorization.
 
 ## Stage 3 — Integration (pending)
 
@@ -43,7 +43,7 @@ develop to main remains a separate owner gate. See [team handoff](team-handoff.m
 | Person 2 / GOAT, opportunistic | Connect the GOAT adapter to the gateway using transaction-bound approvals. |
 | Person 3 / Qatom / QPE, Om | Connect the Qatom adapter to the gateway using transaction-bound approvals. |
 | Person 4 / AAT, Om | Implement injection inspection and PDF extraction. |
-| Person 5 / Nassar | Integrate decisions, receipts and audit views. |
+| Person 5 / Nassar | Integrate decisions, receipts and audit views. **Local evidence:** decision/reason display, scanner evidence, session activity, and allowlisted intent-created audit entries are implemented. Provider receipt view and persisted proposal/evidence reconstruction remain open. |
 
 **Stage checkpoint:** Public-export local fixtures compose AAT proposal output with Qatom using explicitly fake authority, transport, atomic-bound capability and receipt. They test valid synthetic settlement projection, seller variation denied before transport and concurrent duplicate claimed once. A second fixture exercises GOAT signed-only hash recovery with a read-only fake RPC and no signer/broadcast. These are not Awais's gateway. GOAT exposes a proposed authority port with atomic claim, durable signed/broadcast checkpoint and authenticated read-only reconciliation lookup. Awais's gateway branch has not demonstrated either aligned adapter contract in a combined local run. Last GOAT live evidence is a read-only chain `48816` / block `18260370` probe only; no signer or transaction. Qatom live price binding and combined gateway integration remain unverified. Stage 3 remains pending.
 

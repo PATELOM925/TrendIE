@@ -3,8 +3,9 @@
 Read this entry point before changing the repository. The reviewed `develop` integration contains
 the Node 22 QPE/AAT/GOAT workspace, proposed shared contracts, a read-only Qatom MCP client, guarded
 adapters, PDF inspection and offline integration fixtures. Awais gateway source through `11a66a1` is merged for local/test work; its full adapter authority
-contract and real PostgreSQL behavior remain unverified. No Nassar frontend, authenticated
-provider schema evidence or verified live checkout is recorded. Project Stages 1–3 remain open. Read
+contract and real PostgreSQL behavior remain unverified. Nassar's frontend is implemented for
+local/test use; authenticated provider schema evidence and verified live checkout are not recorded.
+Project Stages 1–3 remain open. Read
 [CONTEXT.md](CONTEXT.md) and do not describe fake-tested behavior as live.
 
 ## Owners and gates

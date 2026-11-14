@@ -11,11 +11,15 @@
     "packages/inspection",
     "packages/agent",
     "packages/qatom",
-    "packages/goat"
+    "packages/goat",
+    "apps/web"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "web:dev": "npm --workspace @trendie/web run dev",
+    "web:build": "npm --workspace @trendie/web run build",
+    "web:typecheck": "npm --workspace @trendie/web run typecheck",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
     "gateway:typecheck": "npm --prefix gateway run typecheck",
