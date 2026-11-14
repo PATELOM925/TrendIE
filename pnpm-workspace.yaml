@@ -1,0 +1,5 @@
+packages:
+  - packages/contracts
+  - packages/inspection
+  - packages/agent
+  - packages/qatom
