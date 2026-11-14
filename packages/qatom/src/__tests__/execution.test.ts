@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { PaymentResult, PurchaseProposal } from '@trendie/contracts';
+import { proposalFingerprint, type PaymentResult, type PurchaseProposal } from '@trendie/contracts';
 import {
   createQatomExecutionAdapter,
   type ApprovedBinding,
   type GatewayAuthority,
   type QatomExecutionTransport,
-} from './execution.js';
+} from '../execution.js';
 
 const proposal: PurchaseProposal = {
   version: 1, ownerId: 'buyer-1', intentId: 'intent-1', intentVersion: 2,
@@ -17,7 +17,7 @@ const binding: ApprovedBinding = {
   intentVersion: proposal.intentVersion, proposalFingerprint: '', platform: 'qatom',
   itemId: proposal.itemId, sellerId: proposal.sellerId, money: proposal.money,
   asset: proposal.asset, chain: proposal.chain, providerArgs: proposal.providerArgs,
-  expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  expiresAt: new Date(Date.now() + 60_000).toISOString(), providerReference: 'provider-approval-1',
 };
 
 function harness(options: {
@@ -26,6 +26,8 @@ function harness(options: {
   useDefaultPaidGate?: boolean;
   claim?: GatewayAuthority['claimExecution'];
   bindingOverrides?: Partial<ApprovedBinding>;
+  continuationBindingOverrides?: Partial<ApprovedBinding>;
+  serializeContinuation?: boolean;
   outcomeFails?: boolean;
   call?: QatomExecutionTransport['callTool'];
   toolAvailable?: boolean;
@@ -34,6 +36,8 @@ function harness(options: {
   let claims = 0;
   let calls = 0;
   let continuations = 0;
+  let continuationCalls = 0;
+  let continuationClaimed = false;
   const outcomes: PaymentResult[] = [];
   const authority: GatewayAuthority = {
     async claimExecution(input) {
@@ -44,12 +48,17 @@ function harness(options: {
       outcomes.push(result);
       if (options.outcomeFails) throw new Error('simulated persistence failure');
     },
-    async claimContinuation() { continuations += 1; return { kind: 'claimed', binding }; },
+    async claimContinuation() {
+      continuations += 1;
+      if (options.serializeContinuation && continuationClaimed) return { kind: 'already_claimed' };
+      continuationClaimed = true;
+      return { kind: 'claimed', binding: { ...binding, ...options.continuationBindingOverrides, proposalFingerprint: proposalFingerprint(proposal) } };
+    },
   };
   const transport: QatomExecutionTransport = {
     async listTools() { return options.toolAvailable === false ? [] : [{ name: 'agent_checkout', inputSchema: { type: 'object' } }]; },
     async callTool(name, args) { calls += 1; return options.call ? options.call(name, args) : receipt(); },
-    async continueTool() { return { structuredContent: { approval_required: false } }; },
+    async continueTool() { continuationCalls += 1; return receipt(); },
   };
   const paidGate = options.useDefaultPaidGate ? {} : { paidExecution: { async isAuthorized() { return options.paidAuthorized ?? true; } } };
   const adapter = createQatomExecutionAdapter({
@@ -79,7 +88,7 @@ function harness(options: {
     },
     checkoutToolName: 'agent_checkout',
   });
-  return { adapter, outcomes, get claims() { return claims; }, get calls() { return calls; }, get continuations() { return continuations; } };
+  return { adapter, outcomes, get claims() { return claims; }, get calls() { return calls; }, get continuations() { return continuations; }, get continuationCalls() { return continuationCalls; } };
 }
 
 function receipt(extra: Record<string, unknown> = {}) {
@@ -209,8 +218,44 @@ describe('guarded Qatom execution adapter', () => {
     const pending = await h.adapter.execute({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', proposal });
     expect(pending).toMatchObject({ executionId: 'exec-1', status: 'pending_approval', providerReference: 'provider-approval-1' });
     const continued = await h.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' });
-    expect(continued).toMatchObject({ executionId: 'exec-1', status: 'unknown' });
+    expect(continued).toMatchObject({ executionId: 'exec-1', status: 'succeeded' });
     expect(h.claims).toBe(1);
     expect(h.continuations).toBe(1);
+  });
+
+  it('denies continuation before provider dispatch when authorization is revoked or price binding is unsupported', async () => {
+    const revoked = harness({ paidAuthorized: false });
+    expect((await revoked.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
+    expect(revoked.continuations).toBe(1);
+    expect(revoked.calls).toBe(0);
+    const unsupported = harness({ priceSupported: false });
+    expect((await unsupported.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
+    expect(unsupported.calls).toBe(0);
+    const defaultDenied = harness({ useDefaultPaidGate: true });
+    expect((await defaultDenied.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
+    expect(defaultDenied.calls).toBe(0);
+  });
+
+  it('rejects a continuation with altered persisted reference, owner, expiry, or execution identity', async () => {
+    const variants: Partial<ApprovedBinding>[] = [
+      { providerReference: 'another-reference' }, { ownerId: 'another-owner' },
+      { expiresAt: new Date(Date.now() - 1_000).toISOString() }, { executionId: 'another-execution' },
+    ];
+    for (const continuationBindingOverrides of variants) {
+      const h = harness({ continuationBindingOverrides });
+      const result = await h.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' });
+      expect(result.status).toBe('blocked');
+      expect(h.continuations).toBe(1);
+      expect(h.calls).toBe(0);
+    }
+  });
+
+  it('serializes concurrent continuation claims to one provider dispatch', async () => {
+    const h = harness({ serializeContinuation: true });
+    const run = () => h.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' });
+    const results = await Promise.all([run(), run()]);
+    expect(h.continuationCalls).toBe(1);
+    expect(results.filter((result) => result.status === 'succeeded')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'blocked')).toHaveLength(1);
   });
 });

@@ -46,7 +46,11 @@ Before any future checkout work, retain sanitized actual tool schemas and verify
 price/currency binding, provider approval continuation and receipt semantics from authenticated
 primary evidence. Implement trusted server capability and receipt-verifier ports from those facts;
 do not guess fields. The gateway authority implementation must exist and pass its own controls
-before adapter dispatch. A quote followed by checkout is not price protection.
+before adapter dispatch. Continuation uses the original claimed proposal and persisted provider
+reference, and must pass the paid gate and atomic-price capability again before provider contact.
+A quote followed by checkout is not price protection. A trusted receipt verifier also has to establish
+seller/merchant, asset/currency and chain identity from verified provider facts; the local receipt port
+does not invent those response fields.
 
 Do not invoke a potentially stateful tool, even for a free item. A numeric spend ceiling and
 separate user authorization are required before paid execution, and this library's read-only CLI

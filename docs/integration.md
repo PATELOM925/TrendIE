@@ -72,9 +72,16 @@ authorization. No ceiling is currently configured and no funded credits or free 
 
 `QatomReceiptVerifier` must validate the actual MCP result shape using verified provider evidence,
 retain only a minimal checked receipt ID, item and amount/scale, and compare them with the approved proposal.
+Its trusted implementation must also establish seller/merchant, asset/currency and chain identity from
+provider evidence or a documented provider guarantee before reporting settlement success. The local port
+does not invent fields for those facts; its receipt projection is not proof of them.
 Unrecognized responses, tool errors after a possible write, mismatches and uncertain outcomes stay
 `unknown`. Verified settlement still does not assert fulfillment. No live Qatom response schema is
 assumed by this library; local fake tests exercise the port with explicitly synthetic shapes.
+
+For human-action continuation, the authority's claimed binding must include the same persisted provider
+reference recorded with the pending execution. Continuation reconstructs and fingerprints the proposal
+from that binding, then rechecks the numeric paid gate and atomic-price capability before provider contact.
 
 ## Nassar display dependency
 

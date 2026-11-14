@@ -3,13 +3,21 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "engines": { "node": ">=22" },
-  "workspaces": ["packages/contracts", "packages/qatom"],
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "packages/contracts",
+    "packages/inspection",
+    "packages/agent",
+    "packages/qatom"
+  ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint . --max-warnings=0",
     "test": "vitest run",
+    "test:pdf": "python3 -m unittest discover -s services/pdf-inspection",
     "qatom:probe": "node packages/qatom/dist/cli.js"
   },
   "devDependencies": {
