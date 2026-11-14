@@ -149,6 +149,27 @@ describe('GOAT guarded native transfer', () => {
     expect(h.checkpoints.map(({ phase, txHash: hash }) => ({ phase, txHash: hash }))).toEqual([{ phase: 'signed', txHash }]);
   });
 
+  it('rechecks authorization after the signed checkpoint before wallet broadcast', async () => {
+    let clock = 10_000;
+    const h = harness({ now: () => clock, signer: makeSigner(async (_to, _amount, options) => {
+      await options?.onSignedTransaction?.(txHash);
+      hCalls.push('wallet-broadcast');
+      await options?.onBroadcast?.(txHash);
+      return { txHash };
+    }) }, {
+      async recordSubmissionCheckpoint(input) {
+        if (input.phase === 'signed') clock = 30_000;
+      },
+    });
+    const hCalls: string[] = [];
+    const response = await h.adapter.execute(input);
+    expect(response.status).toBe('unknown');
+    expect(response.providerReference).toBe(txHash);
+    expect(hCalls).toEqual([]);
+    expect(h.calls).not.toContain('send');
+    expect(h.checkpoints).toHaveLength(0);
+  });
+
   it('returns bounded unknown after a stuck confirmation wait without retrying', async () => {
     let attempts = 0;
     const h = harness({ executionTimeoutMs: 10, signer: makeSigner(async (_to, _amount, options) => {
@@ -232,6 +253,35 @@ describe('GOAT guarded native transfer', () => {
     expect(response.status).toBe('succeeded');
     expect(h.outcomes.at(-1)?.status).toBe('succeeded');
     expect((await h.adapter.reconcile({ caller: { ownerId: 'other' }, executionId: 'exec-1' })).status).toBe('blocked');
+  });
+
+  it('reconciles a signed-only hash when it is found mined without broadcasting', async () => {
+    let chainReads = 0;
+    let transactionReads = 0;
+    let receiptReads = 0;
+    const h = harness({ rpc: {
+      async getChainId() { chainReads += 1; return GOAT_TESTNET_CHAIN_ID; },
+      async getTransaction({ hash }) { transactionReads += 1; return { hash, from: hSender, to: hDestination, value: BigInt(proposal.money.amount), blockNumber: 99n, chainId: GOAT_TESTNET_CHAIN_ID }; },
+      async getTransactionReceipt({ hash }) { receiptReads += 1; return { transactionHash: hash, status: 'success', blockNumber: 99n }; },
+    } }, { async getExecutionForReconciliation() { return { executionId: 'exec-1', ownerId: proposal.ownerId, binding: hBinding, txHash, phase: 'signed', proposal }; } });
+    const response = await h.adapter.reconcile({ caller: { ownerId: proposal.ownerId }, executionId: 'exec-1' });
+    expect(response.status).toBe('succeeded');
+    expect([chainReads, transactionReads, receiptReads]).toEqual([1, 1, 1]);
+    expect(h.calls).not.toContain('send');
+  });
+
+  it('keeps a signed-only hash unknown when absent or mismatched and never broadcasts during reconcile', async () => {
+    const absent = harness({ rpc: { async getTransaction() { return null; }, async getTransactionReceipt() { return null; } } }, {
+      async getExecutionForReconciliation() { return { executionId: 'exec-1', ownerId: proposal.ownerId, binding: hBinding, txHash, phase: 'signed', proposal }; },
+    });
+    expect((await absent.adapter.reconcile({ caller: { ownerId: proposal.ownerId }, executionId: 'exec-1' })).status).toBe('unknown');
+    expect(absent.calls).not.toContain('send');
+
+    const mismatched = harness({ rpc: { async getTransaction({ hash }) { return { hash, from: hDestination, to: hDestination, value: BigInt(proposal.money.amount), blockNumber: 99n, chainId: GOAT_TESTNET_CHAIN_ID }; } } }, {
+      async getExecutionForReconciliation() { return { executionId: 'exec-1', ownerId: proposal.ownerId, binding: hBinding, txHash, phase: 'signed', proposal }; },
+    });
+    expect((await mismatched.adapter.reconcile({ caller: { ownerId: proposal.ownerId }, executionId: 'exec-1' })).status).toBe('unknown');
+    expect(mismatched.calls).not.toContain('send');
   });
 
   it('does not reconcile a durable record with a mismatched stored sender binding', async () => {

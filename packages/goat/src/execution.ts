@@ -39,6 +39,8 @@ function checkpointingSigner(signer: GoatSigner, authority: GoatGatewayAuthority
           if (!hash) throw new Error('Invalid signed transaction hash');
           retainHash(hash, 'signed');
           await authority.recordSubmissionCheckpoint({ executionId, phase: 'signed', txHash: hash });
+          await assertDispatch(options?.signal);
+          if (options?.signal?.aborted) throw new Error('Execution was interrupted before dispatch');
           await options?.onSignedTransaction?.(hash);
         },
         onBroadcast: async (value) => {
@@ -143,7 +145,7 @@ export function createGoatExecutionAdapter(options: GoatAdapterOptions) {
         } catch {
           return persistOutcome(options.authority, id, 'unknown', { ...(latestHash ? { providerReference: latestHash } : {}), reason: 'Submission result is uncertain; reconcile before any retry' });
         }
-        if (!submitted.ok || !submitted.output?.txHash) return persistOutcome(options.authority, id, dispatchDenied ? 'blocked' : 'unknown', { ...(latestHash ? { providerReference: latestHash } : {}), reason: dispatchDenied ? 'Authority binding expired or changed before dispatch' : 'Submission result is uncertain; reconcile before any retry' });
+        if (!submitted.ok || !submitted.output?.txHash) return persistOutcome(options.authority, id, dispatchDenied && !latestHash ? 'blocked' : 'unknown', { ...(latestHash ? { providerReference: latestHash } : {}), reason: dispatchDenied && !latestHash ? 'Authority binding expired or changed before dispatch' : 'Submission result is uncertain; reconcile before any retry' });
         const txHash = parseHash(submitted.output.txHash);
         if (!txHash || (latestHash && txHash.toLowerCase() !== latestHash.toLowerCase())) return persistOutcome(options.authority, id, 'unknown', { ...(latestHash ? { providerReference: latestHash } : {}), reason: 'AgentKit transaction identity is inconsistent; reconcile before any retry' });
 
@@ -178,7 +180,7 @@ export function createGoatExecutionAdapter(options: GoatAdapterOptions) {
       try { record = await options.authority.getExecutionForReconciliation({ callerOwnerId: input.caller.ownerId, executionId: input.executionId }); } catch { return safeResult(input.executionId, 'unknown', 'Trusted execution lookup failed'); }
       if (!record || record.executionId !== input.executionId || record.ownerId !== input.caller.ownerId || !validId(record.ownerId)) return safeResult(input.executionId, 'blocked', 'No matching trusted execution was found');
       const txHash = parseHash(record.txHash);
-      if (!txHash || record.phase !== 'broadcast') return safeResult(record.executionId, 'unknown', 'No durable broadcast checkpoint exists yet');
+      if (!txHash || (record.phase !== 'signed' && record.phase !== 'broadcast')) return safeResult(record.executionId, 'unknown', 'No durable signed transaction checkpoint exists yet');
       let proposal: PurchaseProposal;
       try {
         proposal = PurchaseProposalSchema.parse(record.proposal);
