@@ -85,12 +85,17 @@ Posted by payment adapters to `POST /executions/:id/result`. Idempotent on `exec
 ```json
 {
   "executionId": "exe_01H...",
-  "status": "succeeded | failed | pending_unknown",
+  "status": "pending_approval | submitting | pending | unknown | succeeded | failed | blocked",
   "platform": "goat | qatom",
   "txHashOrCheckoutRef": "0x...",
-  "error": null
+  "error": null,
+  "evidence": {}
 }
 ```
+
+References are at most 512 characters. Success requires a reference and nonempty evidence; definitive failure requires nonempty evidence. Evidence is a bounded object and remains an adapter assertion; the gateway does not authenticate its contents. `pending_unknown` from legacy clients normalizes to `unknown`. Results require an existing consumed approval with a persisted `consumed_platform`; that binding is set only from an adapter role during consumption. Admin may report a result only for a prior trusted binding and must match it. Exact duplicate outcomes are idempotent; conflicting terminal outcomes return 409. Legacy consumed approvals with no platform binding cannot accept results.
+
+Migration `002_execution_outcome_integrity.sql` is additive source and has not been applied. Existing histories retain their original hashes and are not rewritten. The audit log rejects TRUNCATE; tests that reset data require a database administrator to reset a disposable test database outside application runtime.
 
 ## 6. Endpoints & Caller Role Matrix
 

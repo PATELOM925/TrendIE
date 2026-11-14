@@ -40,6 +40,10 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
           }
 
           const approval = aprQuery.rows[0];
+          const rolePlatform = req.callerRole === 'adapter-goat' ? 'goat' : req.callerRole === 'adapter-qatom' ? 'qatom' : null;
+          if (!rolePlatform || (approval.consumed_platform && approval.consumed_platform !== rolePlatform)) {
+            return { ok: false, reason: 'PLATFORM_BINDING_REQUIRED' };
+          }
 
           // 2. Lock intent for update
           const intentQuery = await client.query(
@@ -63,14 +67,14 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
           // 3. Atomically consume approval
           const updateRes = await client.query(
             `UPDATE approvals
-             SET consumed_at = NOW()
+             SET consumed_at = NOW(), consumed_platform = $4
              WHERE id = $1
                AND consumed_at IS NULL
                AND expires_at > NOW()
                AND EXISTS (SELECT 1 FROM intents WHERE id = $3 AND expiry > NOW())
                AND proposal_hash = $2
              RETURNING *`,
-            [id, computedHash, intent.id]
+            [id, computedHash, intent.id, rolePlatform]
           );
 
           if (updateRes.rows.length === 0) {
