@@ -1,55 +1,72 @@
 # Current context
 
-**Checked:** 2026-11-14. **Integrated local head:** `om/GOAT` (`d8415bb` plus the dependency-triage correction in this task). PR #1 (QPE → `main`) and PR #2 (AAT → QPE) are published. The intended third PR is `om/GOAT` → `om/AAT`; it has not been opened or pushed. Om will open it after this local correction is checked. See [Division.md](Division.md) for the owner-approved stack exception.
+**Checked:** 2026-11-14. This checkout is pinned to `om/GOAT` at
+`139e5dab964bb77e47a8290d5e9cd880de7a03a8`. Current published heads recorded for this integration
+are Om PR #1 QPE `7fe5e24c1668ee674223f0849a84f39150310966`, PR #2 AAT
+`a0d57e3580a565e00d5037a1d4241ed84db204d4`, PR #3 GOAT
+`139e5dab964bb77e47a8290d5e9cd880de7a03a8`, and Awais branch
+`origin/awais/security-backend` `5a9d3d4283e680ed8aa68de00fe8a677889af1be`. All three Om PRs are
+open. Awais's branch has no PR recorded here. Nassar's frontend and a Tirth branch are not visible.
+The requested Claude Opus 5.5 medium adversarial review is pending; these docs do not report its
+verdict or imply integration, fixes, or previews exist.
 
-## Local implementation by stage and role
+The owner-approved workflow is to combine the reviewed/fixed branches on `develop`, resolve and
+preview integration there, and keep `main` for production. PR #1 targets `develop`; #2 remains based
+on QPE and #3 on AAT until the owner handles sequential merge/retargeting. Do not merge to `main`,
+deploy, apply migrations, or write production under this workflow. See [the plan](docs/plan.md).
 
-| Role | Stage 1 | Stage 2 | Stage 3 | Live / owner evidence |
-|---|---|---|---|---|
-| Person 1 / Awais | Not implemented here | Not implemented here | Gateway authority, intent/policy and durable execution not implemented here | No published Awais branch was visible at the last remote check. This does not establish unpublished local work. |
-| Person 2 / GOAT | Adapter configured for Testnet3; no wallet configured | Native transfer adapter and official AgentKit path locally compiled; no transaction sent | Proposed authority port, signed/broadcast checkpoints and read-only hash reconciliation implemented and fake-tested | Read-only RPC probe only: chain `48816`, block `18260370`. No signer, transaction, gateway durability or payment evidence. |
-| Person 3 / Qatom / QPE, Om | Node 22 workspace, contracts, local client and offline tests | Read-only discovery client; checkout disabled | Proposed adapter ports and local fake coverage | Unauthenticated initialize returned HTTP 401; no authenticated schemas. Atomic price and receipt evidence absent. |
-| Person 4 / AAT, Om | Clean and malicious synthetic listing fixture plus inspection/PDF scaffolding | Agent proposal workflow and optional SDK adapter implemented and offline-tested | Public-export local integration fixture exercises agent → Qatom with test-only fake authority; no gateway integration | Local synthetic results only. No live model calls. |
-| Person 5 / Nassar | Not implemented here | Not implemented here | Not implemented here | Frontend and system integration remain Nassar-owned. |
+## Implementation and integration evidence
 
-These are implementation slices, not completion of whole project stages. Stages 1–3 remain open. Stage 4 security comparisons, Stage 5 delivery/demo verification and Stage 6 escrow are not complete. Shared contract shapes remain proposals until owners align.
+| Slice | Evidence at pinned head | Still needed |
+|---|---|---|
+| Person 1 / Awais gateway | Published branch contains Fastify/Postgres intent, policy, verify/consume, result, audit and review routes, tests and a Qatom HTTP bridge. This establishes submitted source, not passing tests or live behavior. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
+| Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; native transfer path locally compiled and fake-tested. | Gateway contract alignment, configured test wallet, separately authorized bounded testnet action and checked receipt. |
+| Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
+| Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
+| Person 5 / Nassar | No frontend branch visible. | UI and system integration against aligned public interfaces. |
 
-## Safe boundary and evidence
+The source-level contract matrix is in [integration](docs/integration.md). It records concerns in
+the Qatom bridge (USD-TDN mapped to USDC, local binding/expiry fabrication, and unchecked outcome
+HTTP status) as items to resolve in review, not as a completed review verdict. Existing offline
+tests are local evidence only. Do not infer that the gateway test files passed.
 
-The repository has a Node 22 npm workspace containing `contracts`, `inspection`, `agent`, `qatom`, and `goat`, plus local PDF inspection. Typecheck, lint, tests, build, PDF checks and public-package integration tests are local checks only. Fake fixture authority is a test harness; it is not Awais's gateway and makes no live provider call. No gateway, frontend, production authority, authenticated Qatom schema, or verified live checkout exists in this workspace.
+Stages 1–3 are not complete: local slices exist across Persons 1–4, but owner approval, aligned
+contracts, combined local Postgres endpoint tests, model-based attack evidence, a GOAT receipt and
+authenticated Qatom checkout are outstanding. Stage 4 security comparisons and Stage 5 demo
+verification remain; Stage 6 escrow is optional stretch work. Merging to `develop` alone completes
+none of these acceptance gates.
 
-GOAT reconciliation reads a trusted stored hash in either `signed` or `broadcast` phase; it never resubmits. A signed checkpoint alone does not prove a network send. A found matching transaction and verified receipt can resolve settlement; absent, mismatched or unconfirmed observations remain `unknown` or `pending`. The signed callback rechecks binding, expiry, signer and chain after checkpoint persistence and before allowing the wallet provider to broadcast.
+## Setup and live boundaries
 
-The live evidence remains bounded: Qatom unauthenticated initialize returned HTTP 401 with a Bearer challenge and no tools; GOAT public read-only RPC returned chain ID `48816` and block `18260370` on 2026-11-14. These observations do not prove authenticated provider access, gateway behavior, or payment. No wallet, chain transaction, production write, migration or paid model call was used. Paid execution remains disabled by default. The user said “keep it low,” which is not a numeric budget or authorization; Q003 remains open and zero paid spend is authorized.
+Qatom and Backboard dashboard tabs were visible in the user's browser, but page content was not
+readable. Sign-in, plan, credits, API keys, wallet and buyer funding are **not verified**. The
+BuilderBase event page UI displayed “Live, submissions close tomorrow at 10:00 EST” on Nov 14,
+implying Nov 15 10:00 EST; confirm this with the organizer before treating it as the cutoff. The
+event end is listed separately as Nov 15 at 5 PM EST. See [hackathon facts](docs/hackathon.md).
 
-## Current checks and dependency risk
+Use [the local setup guide](docs/testing-setup.md) for reproducible build steps and distinct
+provider gates. No production database, paid provider call, chain transaction or external message
+was used for this documentation task. No numeric paid-call ceiling is approved; paid execution
+remains zero by default (Q003).
 
-The local root checks on this integrated head are the following; they cover local code and fixtures
-only.
+## Current local checks
 
-```sh
-npm ci --ignore-scripts
-npm audit --json
-npm run typecheck
-npm run lint
-npm test
-npm run build
-. .venv-pdf/bin/activate
-npm run test:pdf
-```
-
-Vitest passes 60 tests and PDF inspection passes 4. The complete dependency status and unfiltered
-audit result are in [dependency audit](docs/dependencies.md): the scoped
-`typescript-estree` minimatch override clears the moderate findings; two high audit findings remain
-from AgentKit's nested Zod 3 dependency. This unresolved release risk must be assessed before
-external use.
+The recorded Om integrated-head checks were 60 Vitest tests and 4 PDF tests, plus typecheck, lint,
+build and dependency audit. They apply only to the stated Om head, not Awais's branch or a combined
+`develop` head. See [dependency audit](docs/dependencies.md) for unresolved release risks. Do not
+claim checks on another head until run there.
 
 ## Next owner actions
 
-1. Awais publishes and aligns the server-only gateway authority and durable execution contract. Exact proposed port differences are listed in [integration](docs/integration.md); no production implementation is implied here.
-2. Awais supplies owner-authenticated intent/approval and execution/reconciliation storage behavior, including atomic one-use claim and idempotent checkpoint/outcome writes. No client-supplied hash or binding may authorize reconciliation.
-3. Resolve Qatom authentication, schemas, atomic approved-price binding and receipt semantics from authenticated primary evidence before enabling checkout. Resolve a numeric paid-call ceiling separately; until then use no paid calls.
-4. Nassar implements the UI and system integration against owner-aligned public interfaces. Keep decision, payment and fulfillment states distinct.
-5. Om's next action is owner review of this integrated local head and then the planned GOAT → AAT PR, not merge or deployment. The owner controls stack retargeting and merge order; final adversarial review remains an explicit separate request.
+1. Complete the pinned adversarial review and fix any accepted findings on their owning branches.
+2. Align exact intent, approval, money/unit, execution, checkpoint, result, error and audit contracts
+   across Awais, QPE and GOAT; preserve `unknown` whenever dispatch may have succeeded.
+3. After review/fixes, integrate the authorized slices on `develop`; resolve conflicts and run the
+   separate combined local checks in [testing setup](docs/testing-setup.md). Never migrate or use
+   production for these checks.
+4. Obtain authenticated Qatom capabilities and verify price binding/receipt; obtain numeric paid
+   authorization separately before any paid call. Configure an isolated GOAT test wallet and get a
+   separate explicit testnet spend ceiling before a transaction.
+5. Nassar implements the frontend when available. Rehearse only on an authorized test environment.
 
-Questions and exact blockers remain in [docs/questions.md](docs/questions.md). Hackathon timing and rubric remain unknown.
+Open decisions and blockers: [docs/questions.md](docs/questions.md).
