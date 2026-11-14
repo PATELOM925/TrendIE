@@ -22,6 +22,7 @@ export interface GoatBinding {
   ownerId: string;
   intentId: string;
   intentVersion: number;
+  sender: Address;
   destination: Address;
   asset: typeof GOAT_NATIVE_ASSET;
   chainId: typeof GOAT_TESTNET_CHAIN_ID;
@@ -47,6 +48,7 @@ export interface GoatRpc {
 }
 
 export interface GoatSigner {
+  getAddress(): Promise<string>;
   transferNative(to: string, amountWei: string): Promise<{ txHash: string }>;
 }
 
@@ -122,6 +124,8 @@ export function createGoatExecutionAdapter(options: GoatAdapterOptions) {
 
       const destination = recipient as Address;
       if (!bindingMatches(claim.binding, proposal, fingerprint, destination, now())) return saveOutcome('blocked', { reason: 'Authority binding does not exactly match the proposal' });
+      const sender = await options.signer.getAddress().catch(() => '');
+      if (!/^0x[0-9a-fA-F]{40}$/.test(sender) || claim.binding.sender.toLowerCase() !== sender.toLowerCase()) return saveOutcome('blocked', { reason: 'Signer address does not match the gateway-bound sender' });
       const chainId = await options.rpc.getChainId().catch(() => -1);
       if (chainId !== GOAT_TESTNET_CHAIN_ID) return saveOutcome('blocked', { reason: `GOAT Testnet3 chain gate failed (${chainId})` });
 
@@ -146,7 +150,7 @@ export function createGoatExecutionAdapter(options: GoatAdapterOptions) {
         return saveOutcome('unknown', { providerReference: txHash, reason: 'Transaction submitted; receipt lookup failed' });
       }
       if (!transaction || !receipt) return saveOutcome('pending', { providerReference: txHash, reason: 'Transaction is not yet included' });
-      if (transaction.to?.toLowerCase() !== destination.toLowerCase() || transaction.value !== amountWei || (transaction.chainId !== undefined && transaction.chainId !== GOAT_TESTNET_CHAIN_ID)) {
+      if (transaction.from.toLowerCase() !== claim.binding.sender.toLowerCase() || transaction.to?.toLowerCase() !== destination.toLowerCase() || transaction.value !== amountWei || (transaction.chainId !== undefined && transaction.chainId !== GOAT_TESTNET_CHAIN_ID)) {
         return saveOutcome('unknown', { providerReference: txHash, reason: 'Mined transaction fields do not match the approved binding' });
       }
       if (receipt.status === 'reverted') return saveOutcome('failed', { providerReference: txHash, reason: 'Transaction receipt reports revert', evidence: { receiptStatus: 'reverted', blockNumber: receipt.blockNumber.toString() } });

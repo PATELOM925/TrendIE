@@ -23,7 +23,8 @@ retry. A checked transaction and successful receipt with the requested confirmat
 
 Implement `GoatGatewayAuthority` in a server-only gateway module. `claimExecution` must resolve the
 opaque approval reference from durable server state, bind authenticated `callerOwnerId`, current
-intent/version, GOAT platform, proposal fingerprint/version, exact recipient, native BTC, Testnet3,
+intent/version, GOAT platform, proposal fingerprint/version, signer address, exact recipient,
+native BTC, Testnet3,
 integer amount/scale and expiry, and atomically persist a unique execution claim before returning
 `claimed`. `already_claimed` and `denied` must never permit transfer. The adapter checks the returned
 binding independently before broadcast. `recordOutcome` persists the provider reference, status,

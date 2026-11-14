@@ -14,6 +14,7 @@ function harness(overrides: Partial<GoatAdapterOptions> = {}) {
   const fingerprint = proposalFingerprint(proposal);
   const binding: GoatBinding = {
     platform: 'goat', fingerprint, ownerId: proposal.ownerId, intentId: proposal.intentId, intentVersion: proposal.intentVersion,
+    sender: '0x0000000000000000000000000000000000000001',
     destination: '0x000000000000000000000000000000000000dEaD', asset: 'BTC', chainId: GOAT_TESTNET_CHAIN_ID,
     amount: proposal.money.amount, scale: GOAT_NATIVE_SCALE, expiresAt: 20_000,
   };
@@ -30,7 +31,7 @@ function harness(overrides: Partial<GoatAdapterOptions> = {}) {
     async getTransaction({ hash }) { return { hash, from: '0x0000000000000000000000000000000000000001', to: binding.destination, value: BigInt(proposal.money.amount), blockNumber: 99n, chainId: GOAT_TESTNET_CHAIN_ID }; },
     async getTransactionReceipt({ hash }) { return { transactionHash: hash, status: 'success', blockNumber: 99n }; },
   };
-  const signer = { async transferNative() { calls.push('broadcast'); return { txHash: `0x${'1'.repeat(64)}` }; } };
+  const signer = { async getAddress() { return '0x0000000000000000000000000000000000000001'; }, async transferNative() { calls.push('broadcast'); return { txHash: `0x${'1'.repeat(64)}` }; } };
   const adapter = createGoatExecutionAdapter({ authority, rpc, signer, numericSpendCeilingWei: '10000000000000000', now: () => 10_000, ...overrides });
   return { adapter, calls, outcomes, binding };
 }
@@ -63,7 +64,7 @@ describe('GOAT guarded native transfer', () => {
     expect(blocked.status).toBe('blocked');
     expect(chainFailure.calls).toEqual([]);
 
-    const ambiguous = harness({ signer: { async transferNative() { throw new Error('timeout'); } } });
+    const ambiguous = harness({ signer: { async getAddress() { return '0x0000000000000000000000000000000000000001'; }, async transferNative() { throw new Error('timeout'); } } });
     const unknown = await ambiguous.adapter.execute({ caller: { ownerId: proposal.ownerId }, approvalReference: 'a', proposal });
     expect(unknown.status).toBe('unknown');
     expect(ambiguous.calls).toContain('chain');
@@ -82,7 +83,7 @@ describe('GOAT guarded native transfer', () => {
         },
         async recordOutcome() {},
       },
-      signer: { async transferNative() { broadcasts += 1; return { txHash: `0x${'2'.repeat(64)}` }; } },
+      signer: { async getAddress() { return '0x0000000000000000000000000000000000000001'; }, async transferNative() { broadcasts += 1; return { txHash: `0x${'2'.repeat(64)}` }; } },
     });
     const inputs = { caller: { ownerId: proposal.ownerId }, approvalReference: 'same-reference', proposal };
     const results = await Promise.all([h.adapter.execute(inputs), h.adapter.execute(inputs)]);
@@ -102,13 +103,15 @@ describe('GOAT guarded native transfer', () => {
     expect((await shallow.adapter.execute({ caller: { ownerId: proposal.ownerId }, approvalReference: 'a', proposal })).status).toBe('pending');
     const mismatch = harness({ rpc: { ...successfulRpc, async getTransaction({ hash }) { return { hash, from: '0x0000000000000000000000000000000000000001', to: '0x0000000000000000000000000000000000000002', value: 1n, blockNumber: 99n, chainId: GOAT_TESTNET_CHAIN_ID }; } } });
     expect((await mismatch.adapter.execute({ caller: { ownerId: proposal.ownerId }, approvalReference: 'a', proposal })).status).toBe('unknown');
+    const wrongSender = harness({ rpc: { ...successfulRpc, async getTransaction({ hash }) { return { hash, from: '0x0000000000000000000000000000000000000002', to: '0x000000000000000000000000000000000000dEaD', value: BigInt(proposal.money.amount), blockNumber: 99n, chainId: GOAT_TESTNET_CHAIN_ID }; } } });
+    expect((await wrongSender.adapter.execute({ caller: { ownerId: proposal.ownerId }, approvalReference: 'a', proposal })).status).toBe('unknown');
   });
 
   it('returns unknown when outcome persistence fails after a submitted transfer', async () => {
     const h = harness({ authority: {
       async claimExecution() { return { status: 'claimed', executionId: 'exec-1', binding: hBinding }; },
       async recordOutcome() { throw new Error('storage unavailable'); },
-    } });
+    }, signer: { async getAddress() { return '0x0000000000000000000000000000000000000001'; }, async transferNative() { return { txHash: `0x${'3'.repeat(64)}` }; } } });
     const response = await h.adapter.execute({ caller: { ownerId: proposal.ownerId }, approvalReference: 'a', proposal });
     expect(response.status).toBe('unknown');
     expect(response.providerReference).toMatch(/^0x/);
@@ -124,6 +127,7 @@ const chainFailRpc: GoatRpc = { ...baseRpc, async getChainId() { return 1; } };
 const successfulRpc: GoatRpc = baseRpc;
 const hBinding: GoatBinding = {
   platform: 'goat', fingerprint: proposalFingerprint(proposal), ownerId: proposal.ownerId, intentId: proposal.intentId, intentVersion: proposal.intentVersion,
+  sender: '0x0000000000000000000000000000000000000001',
   destination: '0x000000000000000000000000000000000000dEaD', asset: 'BTC', chainId: GOAT_TESTNET_CHAIN_ID,
   amount: proposal.money.amount, scale: GOAT_NATIVE_SCALE, expiresAt: 20_000,
 };
