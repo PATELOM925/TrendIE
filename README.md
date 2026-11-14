@@ -1,9 +1,11 @@
 # TrendIE — Agentic Payment Guard
 
-**Status:** local QPE, AAT and GOAT libraries and offline integration fixtures are implemented.
-Awais gateway source and reviewed hardening are merged into develop for local/test integration.
-The complete adapter authority contract and real PostgreSQL behavior remain unverified. No Nassar frontend, authenticated Qatom schema or verified live payment integration is
-recorded. Project Stages 1–3 remain open.
+**Status:** local QPE, AAT and GOAT libraries, offline integration fixtures, the Fastify gateway
+slice, and a local Next.js frontend are present. The frontend registers local demo intents and sends
+synthetic proposals through gateway verification. It does not execute payments. The complete
+adapter authority contract, persisted decision/evidence dashboard view, real PostgreSQL behavior,
+authenticated Qatom schema, PDF upload flow, and live payment integration remain unverified. Project
+Stages 1–3 remain open.
 
 Start with:
 
@@ -22,6 +24,7 @@ Start with:
 - [Threat model](docs/security.md)
 - [Hackathon facts and unknowns](docs/hackathon.md)
 - [Local test and provider setup](docs/testing-setup.md)
+- [Frontend local setup](apps/web/README.md)
 - [Unsent sponsor and organizer questions](docs/sponsor-questions.md)
 - [Glossary](GLOSSARY.md)
 - [Changelog](CHANGELOG.md)
