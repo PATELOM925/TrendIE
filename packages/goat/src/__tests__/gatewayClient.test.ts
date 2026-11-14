@@ -1,126 +1,61 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createHttpGoatGatewayAuthority } from '../gatewayClient.js';
 import type { PurchaseProposal } from '@trendie/contracts';
 import { GOAT_NATIVE_SCALE } from '../types.js';
 
-describe('HTTP GoatGatewayAuthority for adapter-goat', () => {
+describe('HTTP GoatGatewayAuthority fail-closed bridge', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
   const proposal: PurchaseProposal = {
     version: 1,
     ownerId: 'user_1',
-    intentId: 'int_goat_01',
+    intentId: 'intent_1',
     intentVersion: 1,
     platform: 'goat',
-    itemId: 'transfer-item',
-    sellerId: 'recipient_0x',
-    money: { amount: '1000000000000000', scale: GOAT_NATIVE_SCALE },
+    itemId: 'item_1',
+    sellerId: 'seller_1',
+    money: { amount: '100', scale: GOAT_NATIVE_SCALE },
     asset: 'BTC',
     chain: 'goat-testnet',
-    providerArgs: {
-      recipient: '0x000000000000000000000000000000000000dEaD',
-      sourceRef: 'goat:tx:1',
-    },
   };
 
-  it('claims execution via gateway /approvals/:id/consume with adapter-goat role', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 200,
-      json: async () => ({ executionId: 'exe_goat_999' }),
-    });
-    global.fetch = fetchMock;
-
-    const authority = createHttpGoatGatewayAuthority({
-      baseUrl: 'http://localhost:3000',
-      apiKey: 'goat-adapter-secret-key-456',
-    });
+  it('denies claims without making an HTTP request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const authority = createHttpGoatGatewayAuthority({ baseUrl: 'http://gateway', apiKey: 'key' });
 
     const result = await authority.claimExecution({
-      callerOwnerId: 'user_1',
-      approvalReference: 'apr_goat_123',
-      proposal,
-      fingerprint: 'fp_goat_123',
-      spendAuthorization: {
-        ownerId: 'user_1',
-        authorizationId: 'auth_1',
-        maxAmountWei: '2000000000000000',
-      },
-      now: 1000,
-    });
-
-    expect(result.status).toBe('claimed');
-    if (result.status === 'claimed') {
-      expect(result.executionId).toBe('exe_goat_999');
-      expect(result.binding.platform).toBe('goat');
-      expect(result.binding.destination).toBe('0x000000000000000000000000000000000000dEaD');
-    }
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:3000/approvals/apr_goat_123/consume',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'X-API-Key': 'goat-adapter-secret-key-456',
-        }),
-      })
-    );
-  });
-
-  it('handles 403 Forbidden from gateway when approval is invalid or expired', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 403,
-      json: async () => ({ message: 'Approval cannot be consumed: EXPIRED' }),
-    });
-    global.fetch = fetchMock;
-
-    const authority = createHttpGoatGatewayAuthority({
-      baseUrl: 'http://localhost:3000',
-      apiKey: 'goat-adapter-secret-key-456',
-    });
-
-    const result = await authority.claimExecution({
-      callerOwnerId: 'user_1',
-      approvalReference: 'apr_bad',
-      proposal,
-      fingerprint: 'fp_bad',
-      spendAuthorization: {
-        ownerId: 'user_1',
-        authorizationId: 'auth_1',
-        maxAmountWei: '2000000000000000',
-      },
-      now: 1000,
+      callerOwnerId: 'user_1', approvalReference: 'approval_1', proposal,
+      fingerprint: 'caller-fingerprint',
+      spendAuthorization: { ownerId: 'user_1', authorizationId: 'auth_1', maxAmountWei: '100' },
+      now: 1,
     });
 
     expect(result.status).toBe('denied');
-    if (result.status === 'denied') {
-      expect(result.reason).toContain('Approval cannot be consumed');
-    }
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('records outcome via gateway /executions/:id/result', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      status: 200,
-      json: async () => ({}),
-    });
-    global.fetch = fetchMock;
+  it('fails checkpoint and outcome writes before making an HTTP request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const authority = createHttpGoatGatewayAuthority({ baseUrl: 'http://gateway', apiKey: 'key' });
 
-    const authority = createHttpGoatGatewayAuthority({
-      baseUrl: 'http://localhost:3000',
-      apiKey: 'goat-adapter-secret-key-456',
-    });
+    await expect(authority.recordSubmissionCheckpoint({
+      executionId: 'execution_1', phase: 'broadcast', txHash: `0x${'1'.repeat(64)}`,
+    })).rejects.toThrow(/unsupported/);
+    await expect(authority.recordOutcome({ executionId: 'execution_1', status: 'unknown' }))
+      .rejects.toThrow(/unsupported/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 
-    await authority.recordOutcome({
-      executionId: 'exe_goat_999',
-      status: 'succeeded',
-      providerReference: '0xgoat_tx_hash_12345',
-    });
+  it('returns no reconciliation record and makes no HTTP request', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const authority = createHttpGoatGatewayAuthority({ baseUrl: 'http://gateway', apiKey: 'key' });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:3000/executions/exe_goat_999/result',
-      expect.objectContaining({
-        method: 'POST',
-        headers: expect.objectContaining({
-          'X-API-Key': 'goat-adapter-secret-key-456',
-        }),
-      })
-    );
+    await expect(authority.getExecutionForReconciliation({
+      callerOwnerId: 'user_1', executionId: 'execution_1',
+    })).resolves.toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

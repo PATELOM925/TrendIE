@@ -6,8 +6,8 @@ describe('Deterministic Policy Engine (verify)', () => {
   const baseIntent: Intent = {
     id: 'int_01H',
     owner: 'user_123',
-    seller: 'Supplier-A',
-    product: 'Product-A',
+    seller: 'supplier-a',
+    product: 'product-a',
     maxAmount: '5000',
     currency: 'USDC',
     allowedDestinations: ['0xSupplierA'],
@@ -47,11 +47,11 @@ describe('Deterministic Policy Engine (verify)', () => {
     expect(res.reasonCodes).toContain('INTENT_EXPIRED');
   });
 
-  it('approves at exact boundary of expiry (now == expiry)', () => {
+  it('rejects at exact boundary of expiry (now == expiry)', () => {
     const boundaryNow = new Date('2026-12-01T00:00:00.000Z');
     const res = verifyPolicy(baseIntent, baseProposal, undefined, boundaryNow);
-    expect(res.decision).toBe('approve');
-    expect(res.reasonCodes).toEqual(['OK']);
+    expect(res.decision).toBe('reject');
+    expect(res.reasonCodes).toContain('INTENT_EXPIRED');
   });
 
   it('rejects when remaining uses is 0 (INTENT_EXHAUSTED)', () => {
@@ -61,14 +61,14 @@ describe('Deterministic Policy Engine (verify)', () => {
     expect(res.reasonCodes).toContain('INTENT_EXHAUSTED');
   });
 
-  it('rejects when seller does not match normalized (SELLER_MISMATCH)', () => {
+  it('rejects when seller does not match exactly (SELLER_MISMATCH)', () => {
     const mismatchProposal: PurchaseProposal = { ...baseProposal, seller: 'supplier-b' };
     const res = verifyPolicy(baseIntent, mismatchProposal, undefined, fixedNow);
     expect(res.decision).toBe('reject');
     expect(res.reasonCodes).toContain('SELLER_MISMATCH');
   });
 
-  it('rejects when product does not match normalized (PRODUCT_MISMATCH)', () => {
+  it('rejects when product does not match exactly (PRODUCT_MISMATCH)', () => {
     const mismatchProposal: PurchaseProposal = { ...baseProposal, product: 'product-b' };
     const res = verifyPolicy(baseIntent, mismatchProposal, undefined, fixedNow);
     expect(res.decision).toBe('reject');
@@ -160,6 +160,21 @@ describe('Deterministic Policy Engine (verify)', () => {
     expect(res.decision).toBe('reject');
     expect(res.reasonCodes).toContain('SELLER_MISMATCH');
     expect(res.reasonCodes).toContain('INJECTION_FLAGGED');
+  });
+
+
+  it('rejects case and whitespace changes in every identity field', () => {
+    for (const field of ['seller', 'product', 'destination'] as const) {
+      const reason = { seller: 'SELLER_MISMATCH', product: 'PRODUCT_MISMATCH', destination: 'DESTINATION_NOT_ALLOWED' }[field];
+      for (const value of [baseProposal[field].toUpperCase(), ` ${baseProposal[field]}`]) {
+        expect(verifyPolicy(baseIntent, { ...baseProposal, [field]: value }, undefined, fixedNow).reasonCodes).toContain(reason);
+      }
+    }
+  });
+
+  it('rejects malformed expiry and clock values', () => {
+    expect(verifyPolicy({ ...baseIntent, expiry: 'invalid' }, baseProposal, undefined, fixedNow).decision).toBe('reject');
+    expect(verifyPolicy(baseIntent, baseProposal, undefined, new Date(NaN)).decision).toBe('reject');
   });
 
   it('is purely deterministic: same input produces identical output across calls', () => {

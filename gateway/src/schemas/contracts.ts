@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const MoneySchema = z
-  .string()
+  .string().max(38)
   .regex(/^\d+$/, 'Money must be a positive integer or zero represented as string in minor units');
 
 export const CurrencySchema = z.enum([
@@ -15,15 +15,15 @@ export const CurrencySchema = z.enum([
 
 export const IntentSchema = z
   .object({
-    id: z.string().min(1),
-    owner: z.string().min(1),
-    seller: z.string().min(1),
-    product: z.string().min(1),
+    id: z.string().min(1).max(64),
+    owner: z.string().min(1).max(128),
+    seller: z.string().min(1).max(256),
+    product: z.string().min(1).max(256),
     maxAmount: MoneySchema,
     currency: CurrencySchema,
-    allowedDestinations: z.array(z.string().min(1)).min(1),
+    allowedDestinations: z.array(z.string().min(1).max(256)).min(1).max(100),
     expiry: z.string().datetime(),
-    remainingUses: z.number().int().nonnegative(),
+    remainingUses: z.number().int().nonnegative().max(2147483647),
     createdAt: z.string().datetime(),
   })
   .strict();
@@ -32,13 +32,13 @@ export type Intent = z.infer<typeof IntentSchema>;
 
 export const PurchaseProposalSchema = z
   .object({
-    intentId: z.string().min(1),
-    seller: z.string().min(1),
-    product: z.string().min(1),
+    intentId: z.string().min(1).max(64),
+    seller: z.string().min(1).max(256),
+    product: z.string().min(1).max(256),
     amount: MoneySchema,
     currency: CurrencySchema,
-    destination: z.string().min(1),
-    sourceRef: z.string().min(1),
+    destination: z.string().min(1).max(256),
+    sourceRef: z.string().min(1).max(256),
   })
   .strict();
 
@@ -53,7 +53,7 @@ export const InspectionFlagSchema = z
 
 export const InspectionResultSchema = z
   .object({
-    source: z.string().min(1),
+    source: z.string().min(1).max(256),
     flags: z.array(InspectionFlagSchema).default([]),
     evidence: z.array(z.string()).default([]),
     findings: z.record(z.string(), z.unknown()).default({}),
@@ -85,7 +85,7 @@ export type DecisionOutcome = z.infer<typeof DecisionOutcomeSchema>;
 
 export const VerificationDecisionSchema = z
   .object({
-    id: z.string().min(1),
+    id: z.string().min(1).max(64),
     proposalHash: z.string().min(1),
     decision: DecisionOutcomeSchema,
     reasonCodes: z.array(ReasonCodeSchema).min(1),
@@ -96,17 +96,18 @@ export const VerificationDecisionSchema = z
 
 export type VerificationDecision = z.infer<typeof VerificationDecisionSchema>;
 
-export const PaymentStatusSchema = z.enum(['succeeded', 'failed', 'pending_unknown']);
+export const PaymentStatusSchema = z.enum(['pending_approval', 'submitting', 'pending', 'unknown', 'succeeded', 'failed', 'blocked', 'pending_unknown']);
 
 export const PaymentPlatformSchema = z.enum(['goat', 'qatom']);
 
 export const PaymentResultSchema = z
   .object({
-    executionId: z.string().min(1),
+    executionId: z.string().min(1).max(64),
     status: PaymentStatusSchema,
     platform: PaymentPlatformSchema,
-    txHashOrCheckoutRef: z.string().nullable(),
-    error: z.string().nullable(),
+    txHashOrCheckoutRef: z.string().max(512).nullable(),
+    error: z.string().max(2048).nullable(),
+    evidence: z.record(z.string(), z.unknown()).refine((v) => JSON.stringify(v).length <= 16384, 'Evidence must be at most 16 KiB'),
   })
   .strict();
 

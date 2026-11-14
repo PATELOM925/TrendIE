@@ -5,6 +5,9 @@ import { requireRole } from '../auth/plugin.js';
 import { appendAuditLog } from '../audit/hashChain.js';
 import { createApprovalId, createExecutionId, generateHmacSignature } from '../approvals/token.js';
 import { config } from '../config.js';
+import { IntentSchema, PurchaseProposalSchema, InspectionResultSchema } from '../schemas/index.js';
+import { verifyPolicy } from '../policy/verify.js';
+import { capApprovalExpiry } from '../approvals/expiry.js';
 
 const ResolveBodySchema = z
   .object({
@@ -36,7 +39,7 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
 
       return await withTransaction(async (client) => {
         // Fetch decision
-        const decRes = await client.query('SELECT * FROM decisions WHERE id = $1', [decisionId]);
+        const decRes = await client.query('SELECT * FROM decisions WHERE id = $1 FOR UPDATE', [decisionId]);
         if (decRes.rows.length === 0) {
           return reply.status(404).send({ error: 'DECISION_NOT_FOUND', message: 'Decision not found' });
         }
@@ -52,19 +55,50 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
         }
 
         let authorizationRef: string | null = null;
-        const now = new Date();
-
         if (resolution === 'approve') {
           // Fetch associated proposal to get intent and proposalHash
           const propRes = await client.query('SELECT * FROM proposals WHERE id = $1', [decision.proposal_id]);
           if (propRes.rows.length === 0 || !propRes.rows[0].intent_id) {
-            return reply.status(400).send({ error: 'PROPOSAL_INVALID', message: 'Cannot approve proposal without valid intent' });
+            return reply.status(409).send({ error: 'REVIEW_REVALIDATION_FAILED', message: 'Cannot approve proposal without valid intent' });
           }
 
           const proposalRow = propRes.rows[0];
+          const proposalParsed = PurchaseProposalSchema.safeParse(proposalRow.raw_payload);
+          if (!proposalParsed.success || proposalParsed.data.intentId !== proposalRow.intent_id) {
+            return reply.status(409).send({ error: 'REVIEW_REVALIDATION_FAILED', message: 'Stored proposal is invalid' });
+          }
+          const intentRes = await client.query('SELECT * FROM intents WHERE id = $1 FOR UPDATE', [proposalRow.intent_id]);
+          if (intentRes.rows.length === 0) {
+            return reply.status(409).send({ error: 'REVIEW_REVALIDATION_FAILED', message: 'Intent is missing' });
+          }
+          const row = intentRes.rows[0];
+          const intentParsed = IntentSchema.safeParse({
+            id: row.id, owner: row.owner, seller: row.seller, product: row.product,
+            maxAmount: row.max_amount.toString(), currency: row.currency,
+            allowedDestinations: row.allowed_destinations,
+            expiry: row.expiry instanceof Date ? row.expiry.toISOString() : new Date(row.expiry).toISOString(),
+            remainingUses: row.remaining_uses,
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+          });
+          const inspectionRes = await client.query('SELECT * FROM inspections WHERE proposal_id = $1', [proposalRow.id]);
+          let inspection;
+          if (inspectionRes.rows.length > 0) {
+            const ir = inspectionRes.rows[0];
+            const parsed = InspectionResultSchema.safeParse({ source: ir.source, flags: ir.flags, evidence: ir.evidence, findings: ir.findings });
+            if (!parsed.success) return reply.status(409).send({ error: 'REVIEW_REVALIDATION_FAILED', message: 'Stored inspection is invalid' });
+            inspection = parsed.data;
+          }
+          const now = new Date();
+          if (!intentParsed.success) {
+            return reply.status(409).send({ error: 'REVIEW_REVALIDATION_FAILED', reasonCodes: ['SCHEMA_INVALID'] });
+          }
+          const evaluation = verifyPolicy(intentParsed.data, proposalParsed.data, inspection, now);
+          if (evaluation.decision === 'reject' || evaluation.reasonCodes.includes('INTENT_EXPIRED') || evaluation.reasonCodes.includes('INTENT_EXHAUSTED')) {
+            return reply.status(409).send({ error: 'REVIEW_REVALIDATION_FAILED', reasonCodes: evaluation.reasonCodes });
+          }
           const approvalId = createApprovalId();
           const executionId = createExecutionId();
-          const expiresAt = new Date(now.getTime() + config.APPROVAL_TTL_SECONDS * 1000).toISOString();
+          const expiresAt = capApprovalExpiry(now, config.APPROVAL_TTL_SECONDS, intentParsed.data.expiry);
           const hmac = generateHmacSignature({
             approvalId,
             executionId,
@@ -80,7 +114,7 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
             [
               approvalId,
               decisionId,
-              proposalRow.intent_id,
+            intentParsed.data.id,
               decision.proposal_hash,
               executionId,
               hmac,

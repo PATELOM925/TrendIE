@@ -10,13 +10,13 @@ declare module 'fastify' {
   }
 }
 
-const keyToRoleMap: Record<string, UserRole> = {
-  [config.API_KEY_AGENT]: 'agent',
-  [config.API_KEY_ADAPTER_GOAT]: 'adapter-goat',
-  [config.API_KEY_ADAPTER_QATOM]: 'adapter-qatom',
-  [config.API_KEY_DASHBOARD]: 'dashboard',
-  [config.API_KEY_ADMIN]: 'admin',
-};
+const keyToRoleMap = new Map<string, UserRole>([
+  [config.API_KEY_AGENT, 'agent'],
+  [config.API_KEY_ADAPTER_GOAT, 'adapter-goat'],
+  [config.API_KEY_ADAPTER_QATOM, 'adapter-qatom'],
+  [config.API_KEY_DASHBOARD, 'dashboard'],
+  [config.API_KEY_ADMIN, 'admin'],
+]);
 
 const authPluginAsync: FastifyPluginAsync = async (fastify) => {
   fastify.decorateRequest('callerRole', undefined);
@@ -32,9 +32,7 @@ const authPluginAsync: FastifyPluginAsync = async (fastify) => {
       apiKey = req.headers.authorization.slice(7).trim();
     }
 
-    if (apiKey && keyToRoleMap[apiKey]) {
-      req.callerRole = keyToRoleMap[apiKey];
-    }
+    if (apiKey) req.callerRole = keyToRoleMap.get(apiKey);
   });
 };
 

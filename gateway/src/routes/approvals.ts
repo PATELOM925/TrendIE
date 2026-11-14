@@ -3,6 +3,7 @@ import { PurchaseProposalSchema, proposalHash } from '../schemas/index.js';
 import { withTransaction } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
 import { appendAuditLog } from '../audit/hashChain.js';
+import { isIntentActive } from '../approvals/expiry.js';
 import { verifyHmacSignature } from '../approvals/token.js';
 
 export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
@@ -40,6 +41,10 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
           }
 
           const approval = aprQuery.rows[0];
+          const rolePlatform = req.callerRole === 'adapter-goat' ? 'goat' : req.callerRole === 'adapter-qatom' ? 'qatom' : null;
+          if (!rolePlatform || (approval.consumed_platform && approval.consumed_platform !== rolePlatform)) {
+            return { ok: false, reason: 'PLATFORM_BINDING_REQUIRED' };
+          }
 
           // 1a. Verify HMAC integrity of the approval record to guard against
           //     forged or DB-layer-tampered rows (timing-safe comparison).
@@ -68,6 +73,10 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
           }
 
           const intent = intentQuery.rows[0];
+          const now = new Date();
+          if (!isIntentActive(intent.expiry instanceof Date ? intent.expiry.toISOString() : String(intent.expiry), now)) {
+            return { ok: false, reason: 'INTENT_EXPIRED' };
+          }
           if (intent.remaining_uses <= 0) {
             return { ok: false, reason: 'INTENT_EXHAUSTED' };
           }
@@ -75,13 +84,14 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
           // 3. Atomically consume approval
           const updateRes = await client.query(
             `UPDATE approvals
-             SET consumed_at = NOW()
+             SET consumed_at = NOW(), consumed_platform = $4
              WHERE id = $1
                AND consumed_at IS NULL
                AND expires_at > NOW()
+               AND EXISTS (SELECT 1 FROM intents WHERE id = $3 AND expiry > NOW())
                AND proposal_hash = $2
              RETURNING *`,
-            [id, computedHash]
+            [id, computedHash, intent.id, rolePlatform]
           );
 
           if (updateRes.rows.length === 0) {

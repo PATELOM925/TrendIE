@@ -1,8 +1,8 @@
 # QPE integration boundary
 
-**Status:** local QPE/AAT/GOAT libraries and fake integration fixtures exist, but the library
-contracts remain proposed for owner alignment. No gateway, frontend or real Qatom checkout
-implementation exists here. Current evidence and blockers are in
+**Status:** local QPE/AAT/GOAT libraries and fake integration fixtures exist. Awais's pinned
+`origin/awais/security-backend` source includes a gateway and HTTP bridge, and is merged into develop through PR #4. Its durable authority contract remains unaligned. Contracts remain proposed pending owner
+alignment. No real Qatom checkout is verified. Current evidence and blockers are in
 [CONTEXT.md](../CONTEXT.md) and [questions](questions.md).
 
 ## QPE library imports
@@ -45,7 +45,27 @@ transport and receipt verifier in that example must come from trusted server int
 construct caller identity from agent JSON. The code above is illustrative; no API server can yet
 run it against a real Qatom checkout.
 
-## Awais authority dependency
+## Awais gateway source and contract matrix
+
+The original reviewed Awais head was `5a9d3d4`; the candidate now includes newer source `11a66a1`
+with both adapter HTTP clients and a cross-platform fixture. The submitted clients fabricated trusted
+binding fields from caller input. Both are now disabled at the compatibility boundary: claims deny,
+writes throw and recovery does not invent state. This is a safety mitigation, not completed gateway
+interoperation. Root and gateway offline suites are separate; real PostgreSQL endpoint tests remain
+unrun.
+
+| Concern | QPE / GOAT proposal | Awais submitted bridge/source | Alignment needed |
+|---|---|---|---|
+| Amount and asset | Qatom proposals use integer amount + scale 3 and `USD-TDN`; GOAT uses explicit chain asset/units. | The former bridge mapped `USD-TDN` to `USDC`; that projection is removed and the bridge is disabled. | Verify provider denomination and gateway contract; never silently reinterpret currency or scale. |
+| Binding | QPE expects a persisted trusted binding with owner, intent/version, fingerprint, provider/item/seller, money, asset, chain, args and expiry. | GOAT's temporary HTTP bridge denies every claim without HTTP; the former client-side binding fabrication is removed. | Pending: authenticated claim endpoint returns or allows retrieval of server-persisted, independently checked binding and authoritative expiry. |
+| Consume outcomes | QPE has `claimed`, `already_claimed`, `denied`; uncertain dispatch remains unknown. | Both legacy bridges deny before any HTTP claim. A future implementation needs bounded requests and uncertain-claim recovery. | Agree status mapping, retry/timeout behavior, and unknown state if consume may have committed before response loss. |
+| Result persistence | QPE requires durable result recording; failed persistence after possible provider write remains unknown. GOAT needs monotonic submission checkpoints and owner-scoped reconciliation reads. | GOAT bridge throws unsupported-contract errors for checkpoint and outcome writes, and returns no reconciliation record; these methods make no HTTP request and no local cache is treated as durable. | Pending: durable checked outcome-write endpoint, monotonic signed/broadcast checkpoint endpoint, and authenticated owner-scoped execution recovery read. Add QPE continuation contract. |
+| Identity and API auth | Trusted caller identity must be server-derived; authorization is owner and intent scoped. | Client sends `X-API-Key`; proposal payload includes intent/seller/product/amount/currency/destination/sourceRef. | Document service identity, key role/scope, authenticated owner binding and prohibition on client-controlled authority fields. |
+
+The original binding, unit and persistence defects were confirmed by the first adversarial review.
+Current mitigations and later gateway changes require fresh review; no updated verdict is implied.
+
+## Gateway authority requirements
 
 Implement `GatewayAuthority` behind a server-only module. `claimExecution` must resolve the opaque
 reference from durable server-owned state; compare authenticated owner, current intent/version,
@@ -56,9 +76,17 @@ provider write, outcome-save failure must remain `unknown`; never mint/retry aut
 must revalidate the same execution, approval, current intent and expiry and atomically serialize
 resume. Storage, transaction behavior, identity binding and migrations belong to Awais.
 
-No implementation of this port or database schema is included in QPE.
+The gateway branch has an implementation proposal; QPE does not yet have an aligned, verified
+implementation of this port or its database contract.
 
 ## GOAT authority port and recovery boundary
+
+The current HTTP client is a temporary fail-closed compatibility bridge, not a gateway
+implementation: claims are denied without network access, checkpoint/outcome writes throw an
+unsupported-contract error, and reconciliation returns no record. GOAT gateway integration remains
+unsupported until the trusted stored-binding claim, durable checkpoint/outcome writes, and
+owner-scoped read-only recovery endpoints exist and are verified. No in-memory cache substitutes
+for those server records.
 
 `@trendie/goat` has a separate proposed `GoatGatewayAuthority` shape in
 `packages/goat/src/types.ts`:
@@ -133,9 +161,10 @@ Nassar owns the presentation and system integration implementation.
 
 ## Local evidence and stage boundary
 
-The test suite uses local fake authority, transport, checkout capability, signer and receipt verifier
-only; it makes no network calls. Public fixtures cover AAT → Qatom proposal flow and GOAT signed-hash
-recovery. They are separate from Awais's production gateway. The unauthenticated capability probe returned 401. Stage 1 live auth and tool
-inventory are unverified, Stage 2 live discovery/payment is unverified, and Stage 3 gateway-backed
-execution is unimplemented. GOAT's separate live evidence is only a read-only RPC chain/block probe.
-No funds, transaction, or production state was touched.
+The Om test suite uses local fake authority, transport, checkout capability, signer and receipt
+verifier only; it makes no network calls. Public fixtures cover AAT → Qatom proposal flow and GOAT
+signed-hash recovery. They are separate from Awais's gateway. The unauthenticated capability probe
+returned 401. Stage 1 live auth and tool inventory are unverified, Stage 2 live discovery/payment is
+unverified, and Stage 3 combined gateway-backed execution is unverified. GOAT's separate live
+evidence is only a read-only RPC chain/block probe. No funds, transaction, or production state was
+touched.
