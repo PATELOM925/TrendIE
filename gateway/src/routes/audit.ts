@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 import { pool } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
 import { verifyAuditChain } from '../audit/verifyChain.js';
@@ -50,9 +51,12 @@ export const auditRoutes: FastifyPluginAsync = async (fastify) => {
       preHandler: [requireRole('dashboard', 'admin')],
     },
     async (req, reply) => {
-      const query = req.query as { limit?: string; offset?: string };
-      const limit = Math.min(parseInt(query.limit ?? '20', 10), 100);
-      const offset = parseInt(query.offset ?? '0', 10);
+      const parsed = z.object({
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        offset: z.coerce.number().int().min(0).max(2147483647).default(0),
+      }).strict().safeParse(req.query);
+      if (!parsed.success) return reply.status(400).send({ error: 'SCHEMA_INVALID', message: 'Invalid pagination' });
+      const { limit, offset } = parsed.data;
 
       const res = await pool.query(
         'SELECT * FROM intents ORDER BY created_at DESC LIMIT $1 OFFSET $2',

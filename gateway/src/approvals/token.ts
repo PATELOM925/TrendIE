@@ -19,6 +19,7 @@ export function generateHmacSignature(payload: ApprovalPayload): string {
  * signature using a constant-time comparison to prevent timing attacks.
  */
 export function verifyHmacSignature(payload: ApprovalPayload, signature: string): boolean {
+  if (typeof signature !== 'string' || !/^[0-9a-f]{64}$/.test(signature)) return false;
   const expected = generateHmacSignature(payload);
   // Both hex strings are ASCII — same byte length. If lengths differ, fail fast.
   if (expected.length !== signature.length) {

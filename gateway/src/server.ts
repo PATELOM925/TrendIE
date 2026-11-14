@@ -14,6 +14,13 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
     logger: appConfig.NODE_ENV === 'test' ? false : true,
   });
 
+  app.setErrorHandler((error, req, reply) => {
+    req.log.error(error);
+    const statusCode = error instanceof Error && 'statusCode' in error ? error.statusCode : undefined;
+    const code = typeof statusCode === 'number' && statusCode >= 400 && statusCode < 500 ? statusCode : 500;
+    return reply.status(code).send({ error: code === 500 ? 'INTERNAL_ERROR' : 'REQUEST_REJECTED', message: code === 500 ? 'Request could not be completed' : 'Request was rejected' });
+  });
+
   await app.register(cors, {
     origin: parseCorsOrigins(appConfig.CORS_ORIGINS),
   });
