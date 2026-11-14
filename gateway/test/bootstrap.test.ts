@@ -29,6 +29,10 @@ describe('Server & Config Bootstrap', () => {
     expect(() => guardedTestDatabaseUrl({ NODE_ENV: 'test', TEST_DATABASE_URL: 'postgresql://secret@host/db' })).toThrow('_test');
     expect(() => guardedTestDatabaseUrl({ NODE_ENV: 'development', TEST_DATABASE_URL: 'postgresql://secret@host/db_test' })).toThrow('NODE_ENV=test');
     expect(guardedTestDatabaseUrl({ NODE_ENV: 'test', TEST_DATABASE_URL: 'postgresql://fake@127.0.0.1/db_test' })).toContain('/db_test');
+    for (const suffix of ['/db_test?database=shared', '/db_test#shared', '/nested/db_test', '/db%2fother_test']) {
+      expect(() => guardedTestDatabaseUrl({ NODE_ENV: 'test', TEST_DATABASE_URL: `postgresql://fake@localhost${suffix}` })).toThrow();
+    }
+    expect(() => loadConfig({ NODE_ENV: 'development', VITEST: 'true', TEST_DATABASE_URL: 'postgresql://fake@localhost/db_test' })).toThrow('NODE_ENV=test');
   });
 
   it('fails config validation when secret is too short', () => {

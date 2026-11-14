@@ -33,7 +33,10 @@ export function guardedTestDatabaseUrl(env: Record<string, string | undefined>):
   } catch {
     throw new Error('TEST_DATABASE_URL must be a valid PostgreSQL URL');
   }
-  if (!['postgres:', 'postgresql:'].includes(parsed.protocol) || !parsed.pathname.replace(/^\//, '').endsWith('_test')) {
+  let databasePath: string;
+  try { databasePath = decodeURIComponent(parsed.pathname); }
+  catch { throw new Error('TEST_DATABASE_URL has an invalid database name'); }
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol) || !/^\/[A-Za-z0-9_-]+_test$/.test(databasePath) || parsed.search || parsed.hash) {
     throw new Error('TEST_DATABASE_URL database name must end in _test');
   }
   return value;
@@ -43,7 +46,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   const keys = ['API_KEY_AGENT', 'API_KEY_ADAPTER_GOAT', 'API_KEY_ADAPTER_QATOM', 'API_KEY_DASHBOARD', 'API_KEY_ADMIN'];
   const present = keys.map((key) => env[key]).filter((value): value is string => Boolean(value));
   if (new Set(present).size !== present.length) throw new Error('API key values must be unique');
-  const runtimeEnv = env.NODE_ENV === 'test'
+  const runtimeEnv = env.NODE_ENV === 'test' || env.VITEST === 'true' || env.TEST_SUITE === 'integration'
     ? { ...env, DATABASE_URL: guardedTestDatabaseUrl(env) }
     : env;
   const parsed = envSchema.safeParse(runtimeEnv);
