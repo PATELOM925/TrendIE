@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { inspectText } from './index.js';
-import { cleanListing, maliciousListing } from './fixtures.js';
+import { inspectText } from '../index.js';
+import { cleanListing, maliciousListing } from '../fixtures.js';
 
 describe('advisory text inspection', () => {
   it('flags hostile seller instructions and retains source offsets', () => {

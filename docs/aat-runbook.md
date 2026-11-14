@@ -1,27 +1,34 @@
 # AAT local runbook
 
-**Scope:** Person 4 local agent and inspection scaffolding. It is advisory and proposal-only. There is no gateway, frontend, approval authority, checkout tool, or live model result in these checks.
+**Scope:** Person 4 local agent and inspection scaffolding. It is advisory and proposal-only. There is no gateway, frontend, approval authority, checkout tool, authenticated provider discovery, or verified live model result in these checks.
 
 ## Local workflow
 
-The package entry points are `@trendie/agent` and `@trendie/inspection`. The core accepts narrow `Discovery` and `Model` ports, validates generated output through `PurchaseProposalSchema`, overwrites identity, intent version, platform, and chain from the trusted task context, checks item/seller/amount against discovery, and returns advisory inspection evidence. The core has turn and tool-call limit fields for caller policy (1–4); elapsed time, result count and text size are bounded. Errors are intentionally generic. `source: scripted` means a fixture transport, not an LLM test.
+The root npm workspace builds `@trendie/contracts`, `@trendie/inspection`, `@trendie/agent`, and `@trendie/qatom` in dependency order. The agent accepts narrow discovery and model ports. It validates the trusted task and all configured limits before provider calls, invokes discovery exactly once, bounds and validates the complete listing payload before inspecting fields, and forwards `maxTurns` and `maxToolCalls` to the model port. Listing findings include source spans and item/seller/source references. Proposals are bounded before schema parsing, reject unknown candidate fields, and receive trusted identity, version, platform, and chain only from the core.
 
-`@trendie/agent/openai` is an optional server-only adapter using the official `@openai/agents` SDK 0.21.0. Importing the core does not inspect credentials or make network calls. Creating the adapter checks `OPENAI_API_KEY`; invoking it may make a paid API call and requires separate authorization and a numeric spend ceiling. No model call was made for this implementation. The SDK receives only a read-only listing function; there is no payment or approval tool.
+`@trendie/agent/openai` is optional and server-only. Construct it with an explicit model name and an asynchronous `authorizeSpend` callback that returns a positive finite numeric ceiling for each invocation. The adapter fails closed when the callback denies authorization and does not run the SDK. Its structured output schema contains proposal fields only; the core supplies trusted fields. The adapter has a caller-controlled turn limit and enforces the listing tool call limit. It can make a paid model call after authorization. This implementation has made no model calls; local mocked SDK tests do not verify provider behavior or actual spend enforcement by the provider.
 
-Inspection scans bounded text for selected instruction patterns and reports source offsets and short excerpts. A missing finding proves nothing. Pattern matching is incomplete and results must not be treated as a decision or authority. HTML is never executed and URLs are never fetched.
+Inspection scans bounded text for selected instruction patterns and reports source offsets. A missing finding proves nothing. Findings are advisory and must not be treated as a decision or authority. HTML is never executed and URLs are never fetched.
 
 ## PDF inspection
 
-`services/pdf-inspection/inspect_pdf.py` extracts local PDF text using pinned PyMuPDF. It limits source size to 5 MB, pages to 20, text to 100,000 characters and processing to 3 seconds. It rejects encrypted/malformed files. It does not execute scripts or fetch remote resources. Text extraction may expose hidden text but does not detect every visual, metadata, or document attack. The caller must provide an allowlisted local path; no network URL is accepted.
+Create an isolated Python environment and install the pinned dependencies:
 
-Install pinned dependencies in an isolated local Python environment with `python -m pip install -r services/pdf-inspection/requirements.txt`. Run `python -m unittest discover -s services/pdf-inspection`. `make_fixture.py` creates a deterministic synthetic local PDF with synthetic provenance and hidden instruction text.
+```sh
+python3 -m venv .venv-pdf
+. .venv-pdf/bin/activate
+python -m pip install -r services/pdf-inspection/requirements.txt
+npm run test:pdf
+```
+
+`npm run test:pdf` fails when the Python environment or dependencies are missing; it does not skip PDF tests. The Node subprocess caps stdout at 1 MB and stderr at 16 KB, kills an oversized or timed out child with `SIGKILL`, hides stderr content from errors, and validates the complete JSON output shape. Python limits source size to 5 MB, pages to 20, extracted text to 100,000 characters, and checks a 3 second cooperative processing budget between pages. That Python limit cannot interrupt a page operation that hangs; the Node hard timeout bounds the whole process. The caller must supply an allowlisted local root; the root is trusted configuration, while the model cannot choose the path. The service rejects traversal and symlink escapes, encrypted/malformed PDFs, and does not execute scripts or fetch remote resources. Text extraction may include visually hidden text but does not detect every visual, metadata, or document attack.
 
 ## Integration handoff
 
 **Awais (gateway):** consume validated proposal output as untrusted input; bind authenticated owner and original intent from server state; revalidate all exact fields and policy; inspection must only add advisory evidence. Do not accept agent identity fields or any approval assertion. No authorization signature is defined by this package.
 
-**Nassar (evidence/status UI):** show listing provenance, proposal fields, inspection flags/offsets, and source (`scripted` vs `model`) separately. Mark findings advisory. Never imply a proposal is approved, purchased, settled, or fulfilled.
+**Nassar (evidence/status UI):** show listing provenance, proposal fields, inspection flags/offsets, source spans, and source (`scripted` vs `model`) separately. Mark findings advisory. Never imply a proposal is approved, purchased, settled, or fulfilled.
 
 ## Evidence and remaining gates
 
-Local unit/PDF checks cover synthetic clean and malicious inputs, spoofed fields, deviations, malformed output, timeout and basic resource caps. They do not prove real LLM resistance, authenticated provider discovery, gateway enforcement, PDF sandbox isolation beyond process limits, or payment behavior. Root workspace manifests are owned by the integrator; add these packages and the PDF service to root commands/workspaces before root-level checks. Stage 1–3 remain pending until owner integration and evidence are reviewed.
+Local typecheck, lint, build, Vitest, and Python checks cover synthetic fixtures and mocked child processes only. They do not prove real LLM resistance, authenticated provider discovery, gateway enforcement, PDF sandbox isolation beyond the implemented process limits, numeric spend enforcement by a model provider, or payment behavior. Authentication (`401`), gateway availability, and a nonzero numeric budget remain open integration gates. No live model, provider, gateway, checkout, or payment stage is verified by this runbook. Stages remain pending until owner integration and fresh evidence are reviewed.
