@@ -39,7 +39,7 @@
       "priority": "P0",
       "owner": "Person 1",
       "contributors": ["Person 5"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Register and persist the buyer's trusted authorization independently of agent-controlled context.",
       "requirements": [
         "Store owner, seller, product, maximum amount, currency or token, expiry, and remaining uses.",
@@ -58,7 +58,7 @@
       "priority": "P0",
       "owner": "Person 1",
       "contributors": ["Person 4"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Compare each purchase proposal with its registered intent and issue a transaction-bound, single-use approval only when every policy check passes.",
       "requirements": [
         "Validate authorization ID, seller, product, amount, currency or token, recipient or destination, and expiry.",
@@ -80,7 +80,7 @@
       "priority": "P0",
       "owner": "Person 1",
       "contributors": ["Person 2", "Person 3"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Provide the Fastify security authority through which all payment actions must pass.",
       "requirements": [
         "Keep payment credentials inaccessible to the LLM.",
@@ -100,7 +100,7 @@
       "priority": "P0",
       "owner": "Person 4",
       "contributors": [],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Inspect untrusted merchant content and PDF invoices for suspicious instructions and return evidence to the gateway and audit trail.",
       "requirements": [
         "Inspect product descriptions and catalog listings.",
@@ -120,7 +120,7 @@
       "priority": "P0",
       "owner": "Person 4",
       "contributors": ["Person 1", "Person 5"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Build the tool-calling purchasing agent and demonstrate the same malicious content against an unprotected agent and the protected gateway flow.",
       "requirements": [
         "Provide clean and malicious product or invoice fixtures.",
@@ -141,7 +141,7 @@
       "priority": "P0",
       "owner": "Person 2",
       "contributors": ["Person 1"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Execute gateway-approved payments through GOAT AgentKit and verify their on-chain results.",
       "requirements": [
         "Configure a GOAT Testnet3 wallet and adapter using AgentKit and viem.",
@@ -162,7 +162,7 @@
       "priority": "P0",
       "owner": "Person 3",
       "contributors": ["Person 1"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Wrap authenticated Qatom marketplace discovery and checkout tools so checkout is available only for gateway-approved proposals.",
       "requirements": [
         "Verify MCP authentication, checkout permissions, and test transaction availability.",
@@ -184,7 +184,7 @@
       "priority": "P0",
       "owner": "Person 1",
       "contributors": ["Person 2", "Person 3", "Person 4"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Persist the intent reference, proposal, verification decision, inspection evidence, and payment outcome for each attempt.",
       "requirements": [
         "Record authorization and verification decisions with reasons and timestamps.",
@@ -203,7 +203,7 @@
       "priority": "P1",
       "owner": "Person 5",
       "contributors": ["Person 1"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Provide a Next.js interface to register purchase intents and review decisions and audit evidence.",
       "requirements": [
         "Display trusted intent, proposed payment, decision, reason, inspection evidence, and transaction status.",
@@ -222,7 +222,7 @@
       "priority": "P1",
       "owner": "Person 1",
       "contributors": ["Person 5"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Route ambiguous purchase proposals to a human for approval before payment execution.",
       "requirements": [
         "Represent review-required as a distinct decision.",
@@ -276,7 +276,7 @@
       "priority": "P0",
       "owner": "Person 5",
       "contributors": ["Person 1", "Person 2", "Person 3", "Person 4"],
-      "status": "not_started",
+      "status": "implemented",
       "description": "Integrate the components into one runnable demo environment and document setup and the demonstration flow.",
       "requirements": [
         "Connect frontend, gateway, agent, and payment adapters through shared API contracts.",
