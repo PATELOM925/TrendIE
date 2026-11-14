@@ -233,6 +233,7 @@ describe('guarded Qatom execution adapter', () => {
     expect(unsupported.calls).toBe(0);
     const defaultDenied = harness({ useDefaultPaidGate: true });
     expect((await defaultDenied.adapter.continue({ caller: { ownerId: 'buyer-1' }, approvalReference: 'opaque', executionId: 'exec-1', providerReference: 'provider-approval-1' })).status).toBe('blocked');
+    expect(defaultDenied.continuations).toBe(0);
     expect(defaultDenied.calls).toBe(0);
   });
 
