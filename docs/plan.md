@@ -5,11 +5,11 @@ This plan preserves the original six stages and five role scopes from [Division.
 ## Pre-stage — Planning and docs foundation
 
 The owner-approved 2026-11-14 workflow uses `develop` as the integration and preview branch and
-reserves `main` for production. PR #1 targets `develop`; PR #2 remains based on QPE and PR #3 on AAT
-until sequential owner-controlled merge/retargeting. The pinned Awais gateway branch is another
-integration input. Requested adversarial review and fixes precede combining on `develop`. This does
-not imply contract alignment by Awais or Nassar. Local code and fake tests do not prove provider
-access or complete a project stage. Release from `develop` to `main` remains a separate owner gate.
+reserves `main` for production. Om PRs #1–#3 and combined gateway PR #4 have been merged into
+`develop`. The final exact-head review cleared source `9ffdba5` for local/test integration and held
+live/production. New contributor work targets develop through focused PRs. This does not complete
+contract alignment, live provider evidence, frontend delivery or a project stage. Release from
+develop to main remains a separate owner gate. See [team handoff](team-handoff.md).
 
 ## Stage 1 — Foundation (pending)
 
@@ -21,7 +21,7 @@ access or complete a project stage. Release from `develop` to `main` remains a s
 | Person 4 / AAT, Om | Create clean and malicious listing fixtures. |
 | Person 5 / Nassar | Scaffold frontend and shared deployment. |
 
-**Stage checkpoint:** Local implementation evidence: QPE workspace/contracts/adapters; AAT clean and malicious synthetic fixtures; GOAT Testnet3 adapter config without a wallet. Live/owner evidence: authenticated Qatom tools are unverified (unauthenticated endpoint returned 401); no GOAT wallet was configured; Awais policy and Nassar frontend are absent here. Stage 1 remains pending. Exact-price P0 blocks Qatom checkout, not local development.
+**Stage checkpoint:** Local implementation evidence: QPE workspace/contracts/adapters; AAT clean and malicious synthetic fixtures; GOAT Testnet3 adapter config without a wallet. Live/owner evidence: authenticated Qatom tools are unverified (unauthenticated endpoint returned 401); no GOAT wallet was configured; Awais policy source and offline tests are merged, but shared contract acceptance remains open; Nassar frontend is pending. Stage 1 remains pending. Exact-price P0 blocks Qatom checkout, not local development.
 
 ## Stage 2 — Core flow (pending)
 

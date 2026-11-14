@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Merge reviewed Om PRs #1–#3 and combined gateway PR #4 into develop. Final source 9ffdba5 is
+  cleared for local/test integration only; main and production remain unchanged. Add the final
+  team handoff, preserve remaining stage gates and track non-blocking audit follow-ups.
+
 - Incorporate Awais HMAC integrity verification and audit/intent-list endpoints; retain expiry,
   consumed-platform and transactional outcome guards through the merge.
 - Sanitize unexpected gateway errors, bound database-backed proposal fields, use prototype-safe

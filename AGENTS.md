@@ -1,9 +1,9 @@
 # Contribution rules
 
-Read this entry point before changing the repository. The integrated local `om/GOAT` head contains
+Read this entry point before changing the repository. The reviewed `develop` integration contains
 the Node 22 QPE/AAT/GOAT workspace, proposed shared contracts, a read-only Qatom MCP client, guarded
-adapters, PDF inspection and offline integration fixtures. Awais has a pinned published gateway
-branch, not yet integrated or verified against these contracts. No Nassar frontend, authenticated
+adapters, PDF inspection and offline integration fixtures. Awais gateway source through `11a66a1` is merged for local/test work; its full adapter authority
+contract and real PostgreSQL behavior remain unverified. No Nassar frontend, authenticated
 provider schema evidence or verified live checkout is recorded. Project Stages 1–3 remain open. Read
 [CONTEXT.md](CONTEXT.md) and do not describe fake-tested behavior as live.
 
@@ -15,9 +15,9 @@ provider schema evidence or verified live checkout is recorded. Project Stages 1
 - Nassar (repository contribution identity Nasar) owns frontend and system integration (Person 5).
 - Preserve original role numbers and scopes. See [Division.md](Division.md) and [the plan](docs/plan.md).
 - `develop` is the authorized integration/preview branch; `main` is production-only. Use focused
-  PRs with small objective commits. PR #1 targets `develop`; #2 AAT → QPE and #3 GOAT → AAT retain
-  their dependencies until owner-controlled sequential integration. The owner controls retargeting
-  and merge; contributors do not deploy or merge to `main`. Do not auto-merge stack layers.
+  PRs with small objective commits. Om PRs #1–#3 and combined gateway PR #4 are merged. New work
+  starts from current `origin/develop`; the owner controls integration/release authorization.
+  Contributors do not deploy or merge to `main`. Do not auto-merge stack layers.
 - The owner-approved 2026-11-14 stacked-work exception is recorded in [Division.md](Division.md):
   Om's AAT may build on QPE and GOAT may build on AAT while dependencies await owner merge. This
   does not imply Awais or Nassar accepted these contract shapes.

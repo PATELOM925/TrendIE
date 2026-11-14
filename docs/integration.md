@@ -1,7 +1,7 @@
 # QPE integration boundary
 
 **Status:** local QPE/AAT/GOAT libraries and fake integration fixtures exist. Awais's pinned
-`origin/awais/security-backend` source includes a gateway and HTTP bridge, and is merged into an unpublished integration candidate; its durable authority contract is still unaligned. Contracts remain proposed pending owner
+`origin/awais/security-backend` source includes a gateway and HTTP bridge, and is merged into develop through PR #4. Its durable authority contract remains unaligned. Contracts remain proposed pending owner
 alignment. No real Qatom checkout is verified. Current evidence and blockers are in
 [CONTEXT.md](../CONTEXT.md) and [questions](questions.md).
 

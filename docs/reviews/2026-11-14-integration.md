@@ -67,3 +67,16 @@ P3 follow-up fixes. On actual Node 22.23.4 (`fnm exec --using 22.23.4`), root ty
 and 69 tests passed; gateway typecheck/lint/build and 73 offline tests passed. The HMAC and new
 HTTP follow-up tests use fake data and mocked database access. No database was contacted.
 The earlier SHIP verdict remains pinned to `3cffe22`; the latest delta awaits its own verdict.
+
+## Final exact-head disposition and integration
+
+The final delta review of `9ffdba59b94d6991c7286686e822c6731d5f09ea` returned **SHIP for
+local/test develop integration**, with no confirmed or plausible P0–P2 local merge blocker, and
+**HOLD for live/production**. The reviewer independently reran the 69 root and 73 gateway tests,
+plus both packages' typecheck/lint/build on actual Node 22.23.4. It did not rerun Python PDF or
+Markdown link validation; those passed separately in the parent check run.
+
+PR #4 merged that exact reviewed head into develop at
+`56926a28833067cb1d20c2ce174bcfad44de0232`. The merge tree matches the reviewed tree. Awais
+source `11a66a1` is an ancestor; main was not changed. Remaining P3 audit-operation and route-test
+follow-ups are tracked as Q011. No new approval applies to live use or later runtime commits.

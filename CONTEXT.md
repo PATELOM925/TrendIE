@@ -1,13 +1,13 @@
 # Current context
 
-**Checked:** 2026-11-14. Om PRs [#1](https://github.com/PATELOM925/TrendIE/pull/1),
-[#2](https://github.com/PATELOM925/TrendIE/pull/2) and
-[#3](https://github.com/PATELOM925/TrendIE/pull/3) were retargeted and merged into `develop`
-at `b576c12c44ec49ed0cd6b00fdc7b7c8c8d6c33b6` after the pinned adversarial review cleared them
-for local integration. `main` remains unchanged. The unpublished `om/develop-integration` candidate
-contains pinned Awais source `11a66a1`, both fail-closed legacy HTTP bridges, guarded database-test
-configuration and subsequent gateway hardening. The prior exact head `3cffe22` received SHIP for local/test integration only. Latest teammate
-changes and review follow-ups require their own exact-head re-review; no live clearance is implied. PR #4 remains the integration candidate PR.
+**Checked:** 2026-11-14. Om PRs #1, #2 and #3 are merged into `develop`. Combined gateway
+[PR #4](https://github.com/PATELOM925/TrendIE/pull/4) is also merged at
+`56926a28833067cb1d20c2ce174bcfad44de0232`, containing reviewed runtime/documentation source
+`9ffdba59b94d6991c7286686e822c6731d5f09ea` and Awais's published work through
+`11a66a17d9aa454eb4430bfe844c03798b0254d5`. The final Opus verdict on `9ffdba5` was **SHIP for
+local/test integration**, with no P0–P2 local merge blocker, and **HOLD for live/production**.
+`main` remains unchanged. Later teammate commits require their own PR/review; no branch was reset
+or force-pushed. See [team handoff](docs/team-handoff.md).
 
 The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
@@ -23,7 +23,7 @@ write production under this authorization. See [the plan](docs/plan.md).
 
 | Slice | Evidence at pinned head | Still needed |
 |---|---|---|
-| Person 1 / Awais gateway | Published branch contains Fastify/Postgres intent, policy, verify/consume, result, audit and review routes, tests and a Qatom HTTP bridge. This establishes submitted source, not passing tests or live behavior. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
+| Person 1 / Awais gateway | Merged Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes and offline checks. Final local source passed 73 gateway tests; real SQL behavior remains unverified. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
 | Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
 | Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
 | Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
@@ -81,11 +81,11 @@ see [dependency audit](docs/dependencies.md). No paid calls or chain transaction
 
 ## Next owner actions
 
-1. Complete remaining outcome fixes, run combined checks and obtain fresh exact-head adversarial review.
+1. Use reviewed develop as the integration base; continue the open acceptance work below through focused PRs.
 2. Align exact intent, approval, money/unit, execution, checkpoint, result, error and audit contracts
    across Awais, QPE and GOAT; preserve `unknown` whenever dispatch may have succeeded.
-3. After review/fixes, integrate the authorized slices on `develop`; resolve conflicts and run the
-   separate combined local checks in [testing setup](docs/testing-setup.md). Never migrate or use
+3. Keep later changes reviewed against current `develop`; run the
+   separate root and gateway checks in [testing setup](docs/testing-setup.md). Never migrate or use
    production for these checks.
 4. Obtain authenticated Qatom capabilities and verify price binding/receipt; obtain numeric paid
    authorization separately before any paid call. Configure an isolated GOAT test wallet and get a

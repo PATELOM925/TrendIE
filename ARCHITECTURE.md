@@ -1,18 +1,18 @@
 # Architecture and implementation boundary
 
 This document separates implemented local QPE/AAT/GOAT libraries from the target system. Current
-verified status is in [CONTEXT.md](CONTEXT.md). The gateway remains Awais-owned and is not
-implemented here; adapter ports and the shared contract shapes remain proposals, not production
+verified status is in [CONTEXT.md](CONTEXT.md). The gateway remains Awais-owned; its Fastify/Postgres source is merged for local/test use, while
+its real database behavior and full adapter authority API remain unverified; adapter ports and the shared contract shapes remain proposals, not production
 authority.
 
 ## Target layout
 
 The local paths shown below exist unless marked `apps/*`; their contents are libraries and fixtures.
-The gateway and frontend paths are proposed targets and do not exist in this repository.
+The gateway lives in its separate pnpm project at gateway/. The frontend remains a proposed target.
 
 ```text
 apps/web/                 Proposed frontend (Nassar; not implemented)
-apps/api/                 Proposed gateway, security and authorization (Awais; not implemented)
+gateway/                  Fastify/Postgres security gateway (Awais; local/test source, SQL unverified)
 packages/contracts/       Shared schemas and types
 packages/qatom/           Qatom adapter (Om)
 packages/agent/           Discovery and proposal agent (Om)
