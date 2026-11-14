@@ -11,14 +11,10 @@ export interface PolicyEvaluation {
   reasonCodes: ReasonCode[];
 }
 
-function normalize(str: string): string {
-  return str.trim().normalize('NFC').toLowerCase();
-}
-
 /**
  * Pure, deterministic verification of a proposed purchase against an intent.
  * - Injects `now` (no Date.now() / system calls)
- * - Exact matching on normalized strings (no fuzzy logic, no LLM)
+ * - Exact matching on unchanged strings (no fuzzy logic, no LLM)
  * - BigInt integer arithmetic for minor monetary units
  * - Returns ALL applicable reason codes
  * - Hard mismatch -> reject
@@ -44,9 +40,9 @@ export function verifyPolicy(
     };
   }
 
-  // 2. Expiry check: exact boundary instant is ok, strictly after is expired
+  // 2. Expiry check: intent is invalid at the expiry instant; malformed dates fail closed.
   const expiryDate = new Date(intent.expiry);
-  if (now.getTime() > expiryDate.getTime()) {
+  if (!Number.isFinite(now.getTime()) || !Number.isFinite(expiryDate.getTime()) || now.getTime() >= expiryDate.getTime()) {
     reasonCodes.push('INTENT_EXPIRED');
     isHardReject = true;
   }
@@ -58,13 +54,13 @@ export function verifyPolicy(
   }
 
   // 4. Seller match
-  if (normalize(intent.seller) !== normalize(proposal.seller)) {
+  if (intent.seller !== proposal.seller) {
     reasonCodes.push('SELLER_MISMATCH');
     isHardReject = true;
   }
 
   // 5. Product match
-  if (normalize(intent.product) !== normalize(proposal.product)) {
+  if (intent.product !== proposal.product) {
     reasonCodes.push('PRODUCT_MISMATCH');
     isHardReject = true;
   }
@@ -97,9 +93,7 @@ export function verifyPolicy(
   }
 
   // 8. Destination allowed
-  const normalizedAllowed = intent.allowedDestinations.map(normalize);
-  const normalizedProposalDest = normalize(proposal.destination);
-  if (!normalizedAllowed.includes(normalizedProposalDest)) {
+  if (!intent.allowedDestinations.includes(proposal.destination)) {
     reasonCodes.push('DESTINATION_NOT_ALLOWED');
     isHardReject = true;
   }

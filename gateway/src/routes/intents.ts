@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { IntentSchema } from '../schemas/index.js';
-import { pool } from '../db/client.js';
+import { pool, withTransaction } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
 import { appendAuditLog } from '../audit/hashChain.js';
 
@@ -24,30 +24,32 @@ export const intentRoutes: FastifyPluginAsync = async (fastify) => {
       const intent = parseResult.data;
 
       try {
-        await pool.query(
-          `INSERT INTO intents (
-            id, owner, seller, product, max_amount, currency, allowed_destinations, expiry, remaining_uses, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-          [
-            intent.id,
-            intent.owner,
-            intent.seller,
-            intent.product,
-            intent.maxAmount,
-            intent.currency,
-            JSON.stringify(intent.allowedDestinations),
-            intent.expiry,
-            intent.remainingUses,
-            intent.createdAt,
-          ]
-        );
+        await withTransaction(async (client) => {
+          await client.query(
+            `INSERT INTO intents (
+              id, owner, seller, product, max_amount, currency, allowed_destinations, expiry, remaining_uses, created_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [
+              intent.id,
+              intent.owner,
+              intent.seller,
+              intent.product,
+              intent.maxAmount,
+              intent.currency,
+              JSON.stringify(intent.allowedDestinations),
+              intent.expiry,
+              intent.remainingUses,
+              intent.createdAt,
+            ]
+          );
 
-        await appendAuditLog(pool, {
-          eventType: 'INTENT_CREATED',
-          entityType: 'intent',
-          entityId: intent.id,
-          callerRole: req.callerRole!,
-          payload: intent,
+          await appendAuditLog(client, {
+            eventType: 'INTENT_CREATED',
+            entityType: 'intent',
+            entityId: intent.id,
+            callerRole: req.callerRole!,
+            payload: intent,
+          });
         });
 
         return reply.status(201).send(intent);

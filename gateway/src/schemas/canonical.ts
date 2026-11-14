@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 /**
  * Deterministically serialize a value into canonical JSON:
  * - Keys recursively sorted lexicographically
- * - Strings trimmed and Unicode normalized (NFC)
+ * - Strings preserved byte-for-byte (identity fields are case/space sensitive)
  * - BigInt serialized as string representation
  * - Rejects non-finite numbers, undefined omitted from objects
  */
@@ -17,7 +17,7 @@ export function canonicalJson(val: unknown): string {
   }
 
   if (typeof val === 'string') {
-    return JSON.stringify(val.trim().normalize('NFC'));
+    return JSON.stringify(val);
   }
 
   if (Array.isArray(val)) {
