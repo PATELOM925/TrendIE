@@ -9,3 +9,4 @@ apps/web/next-env.d.ts
 *.tsbuildinfo
 __pycache__/
 .venv*/
+apps/web/AGENTS.md
