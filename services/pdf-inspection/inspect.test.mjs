@@ -23,6 +23,14 @@ describe('PDF process boundary', () => {
     finally { await malformed.cleanup(); }
   });
 
+  it('counts supplementary Unicode text in Python code points', async () => {
+    const supplementary = await fixture(`process.stdout.write(JSON.stringify({provenance:'synthetic-or-user-local-document',pages:[{page:1,text:'🍸𐀀'}],pageCount:1,textChars:2,limitations:[]}));`);
+    try {
+      const result = await inspectPdf({ path: 'sample.pdf', allowlistedRoot: supplementary.root, python: process.execPath, scriptPath: supplementary.scriptPath });
+      expect(result.textChars).toBe(2);
+    } finally { await supplementary.cleanup(); }
+  });
+
   it('kills a hung child and bounds stdout and stderr', async () => {
     const hung = await fixture(`setInterval(()=>{},1000);`);
     try { await expect(inspectPdf({ path: 'sample.pdf', allowlistedRoot: hung.root, python: process.execPath, scriptPath: hung.scriptPath, timeoutMs: 20 })).rejects.toThrow('timed out'); }

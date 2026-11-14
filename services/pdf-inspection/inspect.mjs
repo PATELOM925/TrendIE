@@ -15,7 +15,7 @@ function validateOutput(value) {
   for (let index = 0; index < value.pages.length; index += 1) {
     const page = value.pages[index];
     if (!page || typeof page !== 'object' || Array.isArray(page) || Object.keys(page).sort().join(',') !== 'page,text' || page.page !== index + 1 || typeof page.text !== 'string') throw new Error('PDF inspection returned invalid output');
-    chars += page.text.length;
+    chars += [...page.text].length;
   }
   if (chars !== value.textChars) throw new Error('PDF inspection returned invalid output');
   return value;

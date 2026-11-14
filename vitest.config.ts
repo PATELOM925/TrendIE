@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['packages/**/__tests__/**/*.test.ts', 'services/**/*.test.mjs'],
+    include: ['packages/**/*.test.ts', 'services/**/*.test.mjs'],
     testTimeout: 5_000,
   },
 });
