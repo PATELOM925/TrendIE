@@ -4,10 +4,12 @@ This plan preserves the original six stages and five role scopes from [Division.
 
 ## Pre-stage — Planning and docs foundation
 
-The owner-approved exception dated 2026-11-14 permits PR #1 QPE → `main`, PR #2 AAT → QPE, and
-planned PR #3 GOAT → AAT. The owner controls dependency retargeting and merging; no stack layer
-auto-merges. This does not imply contract alignment by Awais or Nassar. Local code and fake tests do
-not prove provider access or complete a project stage.
+The owner-approved 2026-11-14 workflow uses `develop` as the integration and preview branch and
+reserves `main` for production. PR #1 targets `develop`; PR #2 remains based on QPE and PR #3 on AAT
+until sequential owner-controlled merge/retargeting. The pinned Awais gateway branch is another
+integration input. Requested adversarial review and fixes precede combining on `develop`. This does
+not imply contract alignment by Awais or Nassar. Local code and fake tests do not prove provider
+access or complete a project stage. Release from `develop` to `main` remains a separate owner gate.
 
 ## Stage 1 — Foundation (pending)
 
@@ -43,7 +45,7 @@ not prove provider access or complete a project stage.
 | Person 4 / AAT, Om | Implement injection inspection and PDF extraction. |
 | Person 5 / Nassar | Integrate decisions, receipts and audit views. |
 
-**Stage checkpoint:** Public-export local fixtures compose AAT proposal output with Qatom using explicitly fake authority, transport, atomic-bound capability and receipt. They test valid synthetic settlement projection, seller variation denied before transport and concurrent duplicate claimed once. A second fixture exercises GOAT signed-only hash recovery with a read-only fake RPC and no signer/broadcast. These are not Awais's gateway. GOAT exposes a proposed authority port with atomic claim, durable signed/broadcast checkpoint and authenticated read-only reconciliation lookup. No production gateway implements either shape here. Last GOAT live evidence is a read-only chain `48816` / block `18260370` probe only; no signer or transaction. Qatom live price binding and gateway integration are absent. Stage 3 remains pending.
+**Stage checkpoint:** Public-export local fixtures compose AAT proposal output with Qatom using explicitly fake authority, transport, atomic-bound capability and receipt. They test valid synthetic settlement projection, seller variation denied before transport and concurrent duplicate claimed once. A second fixture exercises GOAT signed-only hash recovery with a read-only fake RPC and no signer/broadcast. These are not Awais's gateway. GOAT exposes a proposed authority port with atomic claim, durable signed/broadcast checkpoint and authenticated read-only reconciliation lookup. Awais's gateway branch has not demonstrated either aligned adapter contract in a combined local run. Last GOAT live evidence is a read-only chain `48816` / block `18260370` probe only; no signer or transaction. Qatom live price binding and combined gateway integration remain unverified. Stage 3 remains pending.
 
 ## Stage 4 — Security testing (pending)
 
@@ -55,7 +57,7 @@ Compare protected and intentionally unprotected attack scenarios, then cover mis
 
 Validate audit and authorization integrity; verify receipts and recovery from uncertain outcomes; confirm actual Qatom functionality; run legitimate and malicious regressions; document dependencies and licenses; rehearse the demo using authorized test environments. Deploy only under Om's gate. Exact submission and pitch details remain unverified; see [hackathon notes](hackathon.md).
 
-**Stage checkpoint:** The demo presents intent, proposal, decision, provider receipt and uncertain states truthfully, with verified dependencies and evidence.
+**Stage checkpoint:** The demo presents intent, proposal, decision, provider receipt and uncertain states truthfully, with verified dependencies and evidence. Current UI displayed a Nov 15 10:00 EST submission cutoff; organizer confirmation and pitch/judging requirements remain open. See [hackathon notes](hackathon.md).
 
 ## Stage 6 — Stretch: optional escrow (pending)
 
