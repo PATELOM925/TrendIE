@@ -1,9 +1,10 @@
 # Contribution rules
 
-Read this entry point before changing the repository. The QPE branch now has a Node 22 workspace,
-shared contracts, a read-only Qatom MCP client, a guarded adapter library and offline tests. It has
-no gateway authority, frontend, authenticated provider schema evidence or verified live checkout.
-Read [CONTEXT.md](CONTEXT.md) for current status and do not describe fake-tested behavior as live.
+Read this entry point before changing the repository. The integrated local `om/GOAT` head contains
+the Node 22 QPE/AAT/GOAT workspace, proposed shared contracts, a read-only Qatom MCP client, guarded
+adapters, PDF inspection and offline integration fixtures. There is no Awais-owned gateway or
+Nassar frontend, authenticated provider schema evidence or verified live checkout. Project Stages
+1–3 remain open. Read [CONTEXT.md](CONTEXT.md) and do not describe fake-tested behavior as live.
 
 ## Owners and gates
 
@@ -12,11 +13,12 @@ Read [CONTEXT.md](CONTEXT.md) for current status and do not describe fake-tested
   (Person 4); GOAT (Person 2) is opportunistic through Stage 3.
 - Nassar (repository contribution identity Nasar) owns frontend and system integration (Person 5).
 - Preserve original role numbers and scopes. See [Division.md](Division.md) and [the plan](docs/plan.md).
-- No direct writes to `main`. Use a focused PR to `main`, with small objective commits. The owner
-  controls merge and deployment. No contributor merges or deploys.
+- No direct writes to `main`. Use focused PRs with small objective commits. The planned stack is #1
+  QPE → `main`, #2 AAT → QPE, #3 GOAT → AAT. The owner controls retargeting, merge and deployment;
+  no contributor merges or deploys. Do not auto-merge stack layers.
 - The owner-approved 2026-11-14 stacked-work exception is recorded in [Division.md](Division.md):
-  Om may continue on `om/QPE`; later Om AAT and GOAT slices may build on QPE and target QPE until
-  its dependency is merged. This does not imply Awais or Nassar accepted these contract shapes.
+  Om's AAT may build on QPE and GOAT may build on AAT while dependencies await owner merge. This
+  does not imply Awais or Nassar accepted these contract shapes.
 - All orchestration, planning and implementation review for this project use GPT 6.1 Sol. All
   builds and fixes use GPT 6 Luna. Before runtime work, Sol reviews scope, interfaces, edge cases,
   control points and acceptance. Sol reviews the built result and fixes. Final adversarial review

@@ -10,7 +10,8 @@
     "packages/contracts",
     "packages/inspection",
     "packages/agent",
-    "packages/qatom"
+    "packages/qatom",
+    "packages/goat"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
@@ -26,5 +27,10 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.0",
     "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.8"
+    }
   }
 }

@@ -17,14 +17,25 @@ Qatom evidence recorded here.
 From the repository root, with Node 22 and npm:
 
 ```sh
-npm install
+npm ci --ignore-scripts
 npm run typecheck
 npm run lint
 npm test
 npm run build
+. .venv-pdf/bin/activate
+npm run test:pdf
 ```
 
 Tests are offline and use local fakes. Their success does not prove remote access or settlement.
+The workspace includes `@trendie/goat` and the public-export AAT-to-Qatom integration fixture.
+`test:pdf` requires the existing isolated `.venv-pdf` to be activated; if it must be recreated,
+follow the pinned setup in [the AAT runbook](aat-runbook.md). It fails when dependencies are
+missing and never skips PDF checks.
+
+Run the full unfiltered dependency audit with `npm audit --json`; do not use `--omit` to conceal
+findings. The current GOAT AgentKit nested Zod 3 high advisory remains unresolved and requires an
+explicit external-use release assessment. See the [dependency audit record](dependencies.md) and
+Q007 in [open questions](questions.md).
 
 ## Read-only tool inventory
 
