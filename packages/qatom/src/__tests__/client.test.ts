@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createQatomClient } from './client.js';
+import { createQatomClient } from '../client.js';
 
 describe('Qatom client boundary', () => {
   it('rejects arbitrary remote endpoints before network access', async () => {

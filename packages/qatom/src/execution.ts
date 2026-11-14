@@ -1,5 +1,5 @@
 import {
-  PurchaseProposalSchema,
+  parseProposal,
   MoneySchema,
   PaymentResultSchema,
   canonicalJson,
@@ -17,6 +17,7 @@ export interface ApprovedBinding {
   intentId: string;
   intentVersion: number;
   proposalFingerprint: string;
+  providerReference?: string;
   platform: 'qatom';
   itemId: string;
   sellerId: string;
@@ -100,6 +101,7 @@ export function createQatomExecutionAdapter(deps: {
   paidExecution?: PaidExecutionGate;
   receiptVerifier: QatomReceiptVerifier;
   checkoutToolName: string;
+  now?: () => number;
 }): QatomExecutionAdapter {
   const persist = async (result: PaymentResult): Promise<PaymentResult> => {
     try {
@@ -111,13 +113,16 @@ export function createQatomExecutionAdapter(deps: {
     }
   };
   const paidExecution = deps.paidExecution ?? disabledPaidExecution;
+  const now = deps.now ?? Date.now;
 
   return {
     async execute(input) {
-      const proposal = PurchaseProposalSchema.parse(input.proposal);
+      const proposal = parseProposal(input.proposal);
       if (proposal.platform !== 'qatom') return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Proposal platform is not Qatom' };
       if (proposal.ownerId !== input.caller.ownerId) return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Trusted caller does not match proposal owner' };
-      const tools = await deps.transport.listTools();
+      let tools: Awaited<ReturnType<QatomExecutionTransport['listTools']>>;
+      try { tools = await deps.transport.listTools(); }
+      catch { return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Checkout tool discovery failed' }; }
       const tool = tools.find((candidate) => candidate.name === deps.checkoutToolName);
       if (!tool) return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Checkout tool is unavailable' };
       let paidAllowed = false;
@@ -133,18 +138,22 @@ export function createQatomExecutionAdapter(deps: {
         return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Atomic approved-price binding is unverified' };
       }
       const fingerprint = proposalFingerprint(proposal);
-      const claim = await deps.authority.claimExecution({ ...input, proposal, fingerprint });
+      let claim: ClaimResult;
+      try { claim = await deps.authority.claimExecution({ ...input, proposal, fingerprint }); }
+      catch { return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Gateway authority could not claim execution' }; }
+      if (!claim || !['claimed', 'denied', 'already_claimed'].includes((claim as ClaimResult).kind)) return { executionId: '', platform: 'qatom', status: 'blocked', reason: 'Gateway authority returned an invalid claim' };
       if (claim.kind !== 'claimed') {
         return { executionId: claim.kind === 'already_claimed' ? claim.executionId : '', platform: 'qatom', status: 'blocked', reason: claim.kind === 'denied' ? 'Gateway authority denied or rejected this approval' : 'Execution already claimed' };
       }
       const binding = claim.binding;
-      if (binding.ownerId !== input.caller.ownerId || binding.intentId !== proposal.intentId || binding.intentVersion !== proposal.intentVersion || binding.platform !== 'qatom' || binding.proposalFingerprint !== fingerprint || binding.itemId !== proposal.itemId || binding.sellerId !== proposal.sellerId || canonicalJson(binding.money) !== canonicalJson(proposal.money) || binding.asset !== proposal.asset || binding.chain !== proposal.chain || canonicalJson(binding.providerArgs) !== canonicalJson(proposal.providerArgs) || !Number.isFinite(Date.parse(binding.expiresAt)) || Date.parse(binding.expiresAt) <= Date.now()) {
+      if (!validBinding(binding, input.caller, proposal, fingerprint, now())) {
         return persist({ executionId: binding.executionId, platform: 'qatom', status: 'blocked', reason: 'Authority returned a mismatched execution binding' });
       }
       let boundCall: { args: Record<string, unknown> } | undefined;
       try { boundCall = await deps.boundPrice.prepareBoundCall({ toolName: tool.name, toolSchema: tool.inputSchema, binding }); }
       catch { return persist({ executionId: binding.executionId, platform: 'qatom', status: 'blocked', reason: 'Bound checkout arguments could not be prepared' }); }
       if (!boundCall) return persist({ executionId: binding.executionId, platform: 'qatom', status: 'blocked', reason: 'Atomic approved-price binding is unverified' });
+      if (!validBinding(binding, input.caller, proposal, fingerprint, now())) return persist({ executionId: binding.executionId, platform: 'qatom', status: 'blocked', reason: 'Execution binding expired before dispatch' });
       let response: unknown;
       try {
         response = await deps.transport.callTool(tool.name, boundCall.args);
@@ -154,15 +163,34 @@ export function createQatomExecutionAdapter(deps: {
       return persist(await assessProviderResult(deps.receiptVerifier, response, binding, proposal));
     },
     async continue(input) {
-      const claim = await deps.authority.claimContinuation(input);
+      let claim: Awaited<ReturnType<GatewayAuthority['claimContinuation']>>;
+      try { claim = await deps.authority.claimContinuation(input); }
+      catch { return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Gateway authority could not claim continuation' }; }
+      if (!claim || !['claimed', 'denied', 'already_claimed'].includes((claim as typeof claim).kind)) return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Gateway authority returned an invalid continuation claim' };
       if (claim.kind !== 'claimed') return { executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: claim.kind === 'denied' ? 'Gateway authority denied this continuation' : 'Continuation already claimed' };
-      if (claim.binding.executionId !== input.executionId || claim.binding.ownerId !== input.caller.ownerId || claim.binding.platform !== 'qatom' || !Number.isFinite(Date.parse(claim.binding.expiresAt)) || Date.parse(claim.binding.expiresAt) <= Date.now()) {
+      const binding = claim.binding;
+      let expected: PurchaseProposal;
+      let fingerprint: string;
+      try { expected = proposalFromBinding(binding); fingerprint = proposalFingerprint(expected); }
+      catch { return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Continuation binding is invalid' }); }
+      if (!validBinding(binding, input.caller, expected, fingerprint, now()) || binding.executionId !== input.executionId || binding.providerReference !== input.providerReference) {
         return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Continuation binding mismatch' });
       }
+      if (binding.proposalFingerprint !== fingerprint) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Continuation proposal fingerprint mismatch' });
+      let tools: Awaited<ReturnType<QatomExecutionTransport['listTools']>>;
+      try { tools = await deps.transport.listTools(); } catch { return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Checkout tool discovery failed' }); }
+      const tool = tools.find((candidate) => candidate.name === deps.checkoutToolName);
+      if (!tool) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Checkout tool is unavailable' });
+      let paidAllowed = false;
+      try { paidAllowed = await paidExecution.isAuthorized({ caller: input.caller, approvalReference: input.approvalReference, proposal: expected }); } catch { paidAllowed = false; }
+      if (!paidAllowed) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Paid execution is disabled or lacks a numeric spend authorization' });
+      let hasPriceBound = false;
+      try { hasPriceBound = await deps.boundPrice.supportsAtomicPriceBound({ toolName: tool.name, toolSchema: tool.inputSchema }); } catch { hasPriceBound = false; }
+      if (!hasPriceBound) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Atomic approved-price binding is unverified' });
+      if (!validBinding(binding, input.caller, expected, fingerprint, now())) return persist({ executionId: input.executionId, platform: 'qatom', status: 'blocked', reason: 'Continuation binding expired before dispatch' });
       let response: unknown;
       try { response = await deps.transport.continueTool(input.providerReference); }
       catch { return persist({ executionId: input.executionId, platform: 'qatom', status: 'unknown', reason: 'Continuation outcome is uncertain' }); }
-      const expected = { version: 1 as const, ownerId: claim.binding.ownerId, intentId: claim.binding.intentId, intentVersion: claim.binding.intentVersion, platform: 'qatom' as const, itemId: claim.binding.itemId, sellerId: claim.binding.sellerId, money: claim.binding.money, asset: claim.binding.asset, chain: claim.binding.chain, providerArgs: claim.binding.providerArgs };
       return persist(await assessProviderResult(deps.receiptVerifier, response, claim.binding, expected));
     },
   };
@@ -210,6 +238,16 @@ async function assessProviderResult(verifier: QatomReceiptVerifier, response: un
   } catch {
     return { executionId, platform: 'qatom', status: 'unknown', reason: 'Receipt could not be safely verified' };
   }
+}
+
+function proposalFromBinding(binding: ApprovedBinding): PurchaseProposal {
+  return parseProposal({ version: 1, ownerId: binding.ownerId, intentId: binding.intentId, intentVersion: binding.intentVersion, platform: binding.platform, itemId: binding.itemId, sellerId: binding.sellerId, money: binding.money, asset: binding.asset, chain: binding.chain, providerArgs: binding.providerArgs });
+}
+
+function validBinding(binding: ApprovedBinding, caller: TrustedCaller, proposal: PurchaseProposal, fingerprint: string, now: number): boolean {
+  try {
+    return !!binding && typeof binding.executionId === 'string' && binding.executionId.length > 0 && binding.executionId.length <= 256 && binding.ownerId === caller.ownerId && binding.intentId === proposal.intentId && binding.intentVersion === proposal.intentVersion && binding.platform === 'qatom' && binding.proposalFingerprint === fingerprint && binding.itemId === proposal.itemId && binding.sellerId === proposal.sellerId && canonicalJson(binding.money) === canonicalJson(proposal.money) && binding.asset === proposal.asset && binding.chain === proposal.chain && canonicalJson(binding.providerArgs) === canonicalJson(proposal.providerArgs) && Number.isFinite(Date.parse(binding.expiresAt)) && Date.parse(binding.expiresAt) > now;
+  } catch { return false; }
 }
 
 function validReference(value: unknown): value is string {
