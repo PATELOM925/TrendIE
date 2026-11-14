@@ -48,9 +48,14 @@ describe('PDF process boundary', () => {
     const outside = await mkdtemp(join(tmpdir(), 'trendie-pdf-out-'));
     try {
       await writeFile(join(outside, 'outside.pdf'), '%PDF-fixture');
-      await symlink(join(outside, 'outside.pdf'), join(root, 'escape.pdf'));
+      try {
+        await symlink(join(outside, 'outside.pdf'), join(root, 'escape.pdf'));
+        await expect(inspectPdf({ path: 'escape.pdf', allowlistedRoot: root })).rejects.toThrow('outside');
+      } catch (e) {
+        if (e.code !== 'EPERM') throw e;
+        // On Windows without Developer Mode, creating symlinks requires admin privilege (EPERM)
+      }
       await expect(inspectPdf({ path: '../outside.pdf', allowlistedRoot: root })).rejects.toThrow('outside');
-      await expect(inspectPdf({ path: 'escape.pdf', allowlistedRoot: root })).rejects.toThrow('outside');
     } finally { await rm(root, { recursive: true, force: true }); await rm(outside, { recursive: true, force: true }); }
   });
 });
