@@ -6,7 +6,16 @@ environment files and credentials out of this workspace and test logs.
 
 ## Om workspace (Node 22)
 
-From repository root:
+Use the npm root project and the separate pnpm gateway project; do not run pnpm at the root.
+Verify the executable version, not only its path. On the checked machine, the Homebrew path named
+`node@22` actually points to Node 25.8.1. The installed fnm runtime is verified as Node 22.23.4:
+
+```sh
+fnm exec --using 22.23.4 node --version
+# Prefix npm/pnpm commands below with: fnm exec --using 22.23.4
+```
+
+From repository root under the verified Node 22 runtime:
 
 ```sh
 node --version

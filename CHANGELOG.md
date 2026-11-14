@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Incorporate Awais HMAC integrity verification and audit/intent-list endpoints; retain expiry,
+  consumed-platform and transactional outcome guards through the merge.
+- Sanitize unexpected gateway errors, bound database-backed proposal fields, use prototype-safe
+  API-key lookup, reject unused GOAT action metadata and remove the conflicting root pnpm workspace.
+- Correct the prior Node runtime claim: the named Homebrew path was Node 25. Actual Node 22.23.4
+  is available through fnm; validate the executable version before running checks.
+
 - Make the GOAT HTTP authority bridge fail closed: claims deny without HTTP; checkpoint and outcome
   writes report the unsupported contract; reconciliation returns no record. Document required
   trusted stored-binding, durable write, and owner-scoped recovery endpoints as pending.

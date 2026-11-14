@@ -45,3 +45,25 @@ passed four tests with `.venv-pdf`. Outcome route tests use a database double an
 writes, platform binding, idempotency, reference bounds, transitions and audit-failure rollback.
 No PostgreSQL integration suite, migration or provider call was executed. A fresh adversarial
 review of the complete candidate is required before merging this integration PR.
+
+## Second adversarial verdict and runtime correction
+
+Opus re-reviewed exactly `3cffe2249e65583d89e64b303bf026169b46dbfc` and returned **SHIP for
+local/test integration into develop**, with no P0–P2 local merge blockers, and **HOLD for live and
+production**. It independently reran root 65 tests and gateway 60 tests plus both packages'
+typecheck/lint/build. It identified that the Homebrew path named node@22 resolves to Node 25.8.1;
+earlier reports calling those runs Node 22 were incorrect. Actual Node 22.23.4 is installed via fnm.
+
+P3 follow-ups address bounded gateway schemas and sanitized route errors, prototype-safe API-key
+lookup, unused GOAT executable metadata and conflicting root package-manager signals. Awais then
+published HMAC verification and audit/list endpoints at `11a66a1`; that source is merged into the
+candidate, preserving the local expiry/platform controls. HMAC verification now rejects malformed
+signatures and pagination rejects invalid bounds. These later changes require fresh review.
+
+## Latest delta before final review
+
+Runtime source `a1aecbc5bad32601582bd6658a8231f6880af2e4` includes Awais `11a66a1` and the
+P3 follow-up fixes. On actual Node 22.23.4 (`fnm exec --using 22.23.4`), root typecheck/lint/build
+and 69 tests passed; gateway typecheck/lint/build and 73 offline tests passed. The HMAC and new
+HTTP follow-up tests use fake data and mocked database access. No database was contacted.
+The earlier SHIP verdict remains pinned to `3cffe22`; the latest delta awaits its own verdict.

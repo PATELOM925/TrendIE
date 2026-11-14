@@ -5,9 +5,9 @@
 [#3](https://github.com/PATELOM925/TrendIE/pull/3) were retargeted and merged into `develop`
 at `b576c12c44ec49ed0cd6b00fdc7b7c8c8d6c33b6` after the pinned adversarial review cleared them
 for local integration. `main` remains unchanged. The unpublished `om/develop-integration` candidate
-contains pinned Awais source `0b7d110`, both fail-closed legacy HTTP bridges, guarded database-test
-configuration and subsequent gateway hardening. It is pending fresh exact-head adversarial review;
-no clearance applies to these later changes. PR #4 remains the integration candidate PR.
+contains pinned Awais source `11a66a1`, both fail-closed legacy HTTP bridges, guarded database-test
+configuration and subsequent gateway hardening. The prior exact head `3cffe22` received SHIP for local/test integration only. Latest teammate
+changes and review follow-ups require their own exact-head re-review; no live clearance is implied. PR #4 remains the integration candidate PR.
 
 The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
@@ -62,12 +62,19 @@ remains zero by default (Q003).
 
 ## Current local checks
 
-The combined runtime source at `6ba9fcc4334f2eea5eeb0209311e6d8f9fb5ee99` passed root
+The earlier combined runtime source at `6ba9fcc4334f2eea5eeb0209311e6d8f9fb5ee99` passed root
 typecheck, lint, build and 65 tests; separate gateway typecheck, lint, build and 60 offline tests;
 and four Python PDF tests using `.venv-pdf`. This source includes the Qatom/GOAT safety boundaries,
-policy/audit/expiry changes and outcome transaction regression coverage. Docs-only changes after
-that source commit do not grant adversarial clearance. No database integration tests or migrations
+policy/audit/expiry changes and outcome transaction regression coverage. Those checks used Node 25.8.1: the apparent node@22 Homebrew path pointed to Node 25.
+Actual Node 22.23.4 is available through fnm and is used for subsequent checks. Prior Node 22
+validation claims based solely on that path were incorrect. No database integration tests or migrations
 were run; database durability, concurrency and SQL source remain unverified in PostgreSQL.
+
+Latest runtime source `a1aecbc5bad32601582bd6658a8231f6880af2e4` passed root typecheck/lint/build,
+69 root tests, separate gateway typecheck/lint/build and 73 offline gateway tests on verified
+Node **22.23.4**, invoked with `fnm exec --using 22.23.4`. This includes Awais's published HMAC
+verification and audit/list endpoints, sanitized errors, bounded schema fields, prototype-safe API
+keys and strict GOAT executable arguments. It does not add PostgreSQL integration evidence.
 
 The dependency audit retains the AgentKit/Zod high finding from the checked dependency baseline;
 see [dependency audit](docs/dependencies.md). No paid calls or chain transactions have been made.

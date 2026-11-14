@@ -47,7 +47,7 @@ run it against a real Qatom checkout.
 
 ## Awais gateway source and contract matrix
 
-The original reviewed Awais head was `5a9d3d4`; the candidate now includes newer source `0b7d110`
+The original reviewed Awais head was `5a9d3d4`; the candidate now includes newer source `11a66a1`
 with both adapter HTTP clients and a cross-platform fixture. The submitted clients fabricated trusted
 binding fields from caller input. Both are now disabled at the compatibility boundary: claims deny,
 writes throw and recovery does not invent state. This is a safety mitigation, not completed gateway
