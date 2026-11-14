@@ -32,6 +32,11 @@ The workspace includes `@trendie/goat` and the public-export AAT-to-Qatom integr
 follow the pinned setup in [the AAT runbook](aat-runbook.md). It fails when dependencies are
 missing and never skips PDF checks.
 
+Run the full unfiltered dependency audit with `npm audit --json`; do not use `--omit` to conceal
+findings. The current GOAT AgentKit nested Zod 3 high advisory remains unresolved and requires an
+explicit external-use release assessment. See the [dependency audit record](dependencies.md) and
+Q007 in [open questions](questions.md).
+
 ## Read-only tool inventory
 
 After building, `npm run qatom:probe` attempts `initialize` and `tools/list`. It prints only whether

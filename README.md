@@ -15,6 +15,7 @@ Start with:
 - [Shared contracts](docs/contracts.md)
 - [QPE integration boundary](docs/integration.md)
 - [Open questions](docs/questions.md)
+- [Dependency audit and release risk](docs/dependencies.md)
 - [Qatom runbook](docs/qatom-runbook.md)
 - [Threat model](docs/security.md)
 - [Hackathon facts and unknowns](docs/hackathon.md)

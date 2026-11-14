@@ -1,6 +1,6 @@
 # Current context
 
-**Checked:** 2026-11-14. **Integrated local head:** `om/GOAT` (`GOAT257b84e` plus the ordinary local merge of `om/AAT` at `a0d57e3`, which includes QPE `7fe5e24`). PR #1 (QPE → `main`) and PR #2 (AAT → QPE) are published. The planned third layer is GOAT → AAT; it has not been opened or pushed. See [Division.md](Division.md) for the owner-approved stack exception.
+**Checked:** 2026-11-14. **Integrated local head:** `om/GOAT` (`d8415bb` plus the dependency-triage correction in this task). PR #1 (QPE → `main`) and PR #2 (AAT → QPE) are published. The intended third PR is `om/GOAT` → `om/AAT`; it has not been opened or pushed. Om will open it after this local correction is checked. See [Division.md](Division.md) for the owner-approved stack exception.
 
 ## Local implementation by stage and role
 
@@ -21,6 +21,28 @@ The repository has a Node 22 npm workspace containing `contracts`, `inspection`,
 GOAT reconciliation reads a trusted stored hash in either `signed` or `broadcast` phase; it never resubmits. A signed checkpoint alone does not prove a network send. A found matching transaction and verified receipt can resolve settlement; absent, mismatched or unconfirmed observations remain `unknown` or `pending`. The signed callback rechecks binding, expiry, signer and chain after checkpoint persistence and before allowing the wallet provider to broadcast.
 
 The live evidence remains bounded: Qatom unauthenticated initialize returned HTTP 401 with a Bearer challenge and no tools; GOAT public read-only RPC returned chain ID `48816` and block `18260370` on 2026-11-14. These observations do not prove authenticated provider access, gateway behavior, or payment. No wallet, chain transaction, production write, migration or paid model call was used. Paid execution remains disabled by default. The user said “keep it low,” which is not a numeric budget or authorization; Q003 remains open and zero paid spend is authorized.
+
+## Current checks and dependency risk
+
+The local root checks on this integrated head are the following; they cover local code and fixtures
+only.
+
+```sh
+npm ci --ignore-scripts
+npm audit --json
+npm run typecheck
+npm run lint
+npm test
+npm run build
+. .venv-pdf/bin/activate
+npm run test:pdf
+```
+
+Vitest passes 60 tests and PDF inspection passes 4. The complete dependency status and unfiltered
+audit result are in [dependency audit](docs/dependencies.md): the scoped
+`typescript-estree` minimatch override clears the moderate findings; two high audit findings remain
+from AgentKit's nested Zod 3 dependency. This unresolved release risk must be assessed before
+external use.
 
 ## Next owner actions
 

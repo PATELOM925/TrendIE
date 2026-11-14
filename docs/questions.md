@@ -11,7 +11,9 @@ question blocks only work that depends on its answer.
 | Q004 | Can Qatom atomically bind the charged price/currency to the approved proposal? | No authenticated tool schema or checkout response schema was available. A quote read is not an atomic price limit. | Open P0. Live checkout blocked until provider capability is verified and an independent review approves the binding. |
 | Q005 | Which demo item, seller/merchant and amount are confirmed? | No confirmed demo fixture or merchant was provided. | Open. Use synthetic local fixtures only until the team confirms the demo case. |
 | Q006 | What are the exact event submission, demo and pitch requirements? | Existing planning notes say these details are unknown. | Open. Stage 5 scheduling and presentation remain unverified; see [hackathon notes](hackathon.md). |
+| Q007 | Om / GOAT AgentKit upstream: what compatible release or tested replacement resolves the nested Zod advisory? | Current registry metadata reports latest `@goatnetwork/agentkit@0.3.0` with `zod ^3.24.2`; the lock resolves nested Zod `3.25.76`. The current advisory's patched version is `4.6.6`, and no Zod 3 patch release or compatible AgentKit release was identified. | Open. Keep the finding visible in the full audit. Do not force Zod 4 into AgentKit's Zod 3 path. Before external use, assess and accept the high transitive risk or wait for an upstream patch / separately tested alternative. See [dependency audit](dependencies.md). |
 
 No Awais or Nassar agreement to the current proposed contracts is implied by this list or by local
 tests. The fake authority in `packages/integration.test.ts` exists only to exercise the adapter
-boundary with synthetic data.
+boundary with synthetic data. The [dependency audit](dependencies.md) records current advisory
+counts and unresolved release risk.

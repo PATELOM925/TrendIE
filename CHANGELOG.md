@@ -15,3 +15,6 @@
 - Extend root workspace coverage and document local stage implementation separately from owner and
   live evidence. Awais's gateway and Nassar's frontend are not implemented here. Authenticated
   Qatom schemas, atomic price limits and verified checkout remain open.
+- Scope a `minimatch@11.0.8` override to the `typescript-estree` dependency path and remove the
+  vulnerable nested 10.2.6 lock entry. The full audit no longer reports the seven moderate findings;
+  two high AgentKit/Zod audit entries remain and are documented as an external-use release risk.
