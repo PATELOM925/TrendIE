@@ -95,4 +95,36 @@ describe('OpenAI adapter with the actual Agents SDK Runner', () => {
     await expect(pending).rejects.toThrow('aborted');
     expect(fake.calls).toBe(0);
   });
+
+  it('supports Backward / Backboard.io environment configuration', () => {
+    const originalOpenAiKey = process.env.OPENAI_API_KEY;
+    const originalOpenAiBase = process.env.OPENAI_BASE_URL;
+    const originalBackboardKey = process.env.BACKBOARD_API_KEY;
+    const originalBackboardBase = process.env.BACKBOARD_BASE_URL;
+
+    try {
+      delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_BASE_URL;
+      process.env.BACKBOARD_API_KEY = 'bb-test-key-12345';
+      process.env.BACKBOARD_BASE_URL = 'https://api.backboard.io/v1';
+
+      const model = createOpenAIModel({
+        modelName: 'gpt-4o',
+        authorizeSpend: async () => 0.05,
+      });
+
+      expect(model).toBeDefined();
+      expect(process.env.OPENAI_API_KEY).toBe('bb-test-key-12345');
+      expect(process.env.OPENAI_BASE_URL).toBe('https://api.backboard.io/v1');
+    } finally {
+      if (originalOpenAiKey !== undefined) process.env.OPENAI_API_KEY = originalOpenAiKey;
+      else delete process.env.OPENAI_API_KEY;
+      if (originalOpenAiBase !== undefined) process.env.OPENAI_BASE_URL = originalOpenAiBase;
+      else delete process.env.OPENAI_BASE_URL;
+      if (originalBackboardKey !== undefined) process.env.BACKBOARD_API_KEY = originalBackboardKey;
+      else delete process.env.BACKBOARD_API_KEY;
+      if (originalBackboardBase !== undefined) process.env.BACKBOARD_BASE_URL = originalBackboardBase;
+      else delete process.env.BACKBOARD_BASE_URL;
+    }
+  });
 });

@@ -21,12 +21,6 @@
 
 import { describe, expect, it } from 'vitest';
 import { inspectText } from '@trendie/inspection';
-import {
-  type Intent,
-  type PurchaseProposal,
-  type VerificationDecision,
-  proposalFingerprint,
-} from '@trendie/contracts';
 
 // --- Shared Fixtures ---
 
@@ -133,9 +127,7 @@ function evaluateGatewayPolicy(
 // --- Simulating Payment Adapter Authority Check ---
 
 function simulatePaymentAdapterExecution(
-  approvalRef: string | undefined,
-  destination: string,
-  amount: string
+  approvalRef: string | undefined
 ): { status: 'succeeded' | 'blocked'; txHash?: string; error?: string } {
   if (!approvalRef) {
     return {
@@ -242,9 +234,7 @@ describe('Stage 4: Adversarial Attack Comparison (Scenario A vs Scenario B)', ()
 
       // 4. Payment adapter attempts execution without gateway approval token
       const paymentResult = simulatePaymentAdapterExecution(
-        verification.authorizationRef,
-        manipulatedProposal.destination,
-        manipulatedProposal.amount
+        verification.authorizationRef
       );
 
       // Payment is BLOCKED - zero money transferred
@@ -279,9 +269,7 @@ describe('Stage 4: Adversarial Attack Comparison (Scenario A vs Scenario B)', ()
 
       // 4. Payment adapter is blocked
       const paymentResult = simulatePaymentAdapterExecution(
-        verification.authorizationRef,
-        manipulatedProposal.destination,
-        manipulatedProposal.amount
+        verification.authorizationRef
       );
       expect(paymentResult.status).toBe('blocked');
     });
@@ -311,9 +299,7 @@ describe('Stage 4: Adversarial Attack Comparison (Scenario A vs Scenario B)', ()
 
       // 4. Payment adapter executes with valid authorizationRef
       const paymentResult = simulatePaymentAdapterExecution(
-        verification.authorizationRef,
-        legitimateProposal.destination,
-        legitimateProposal.amount
+        verification.authorizationRef
       );
 
       expect(paymentResult.status).toBe('succeeded');

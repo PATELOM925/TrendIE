@@ -36,7 +36,15 @@ export function createOpenAIModel({ modelName, authorizeSpend, maxOutputTokens =
   if (typeof modelName !== 'string' || modelName.length < 1 || modelName.length > 128) throw new TypeError('An explicit model name is required');
   if (typeof authorizeSpend !== 'function') throw new TypeError('An asynchronous spend authorization gate is required');
   if (!Number.isSafeInteger(maxOutputTokens) || maxOutputTokens < 1 || maxOutputTokens > 4_096) throw new RangeError('Invalid model output token limit');
-  if (!process.env.OPENAI_API_KEY && !modelProvider) throw new Error('OPENAI_API_KEY is required to create the optional model adapter');
+  if (!process.env.OPENAI_API_KEY && process.env.BACKBOARD_API_KEY) {
+    process.env.OPENAI_API_KEY = process.env.BACKBOARD_API_KEY;
+    if (!process.env.OPENAI_BASE_URL) {
+      process.env.OPENAI_BASE_URL = process.env.BACKBOARD_BASE_URL || 'https://api.backboard.io/v1';
+    }
+  }
+  if (!process.env.OPENAI_API_KEY && !process.env.BACKBOARD_API_KEY && !modelProvider) {
+    throw new Error('OPENAI_API_KEY or BACKBOARD_API_KEY is required to create the optional model adapter');
+  }
   const runner = new Runner({ tracingDisabled: true, traceIncludeSensitiveData: false, modelSettings: { maxTokens: maxOutputTokens }, ...(modelProvider ? { modelProvider } : {}) });
   return {
     async propose(rawInput) {
