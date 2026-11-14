@@ -1,6 +1,8 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import { Config, config as defaultConfig } from './config.js';
+import { authPlugin } from './auth/plugin.js';
+import { intentRoutes } from './routes/intents.js';
 
 export async function buildServer(appConfig: Config = defaultConfig): Promise<FastifyInstance> {
   const app = Fastify({
@@ -11,9 +13,13 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
     origin: true,
   });
 
+  await app.register(authPlugin);
+
   app.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
+
+  await app.register(intentRoutes);
 
   return app;
 }

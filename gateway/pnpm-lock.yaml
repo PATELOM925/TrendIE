@@ -175,6 +175,9 @@ importers:
       fastify:
         specifier: ^5.12.8
         version: 5.12.8
+      fastify-plugin:
+        specifier: ^6.0.1
+        version: 6.0.1
       pg:
         specifier: ^8.23.1
         version: 8.23.1
