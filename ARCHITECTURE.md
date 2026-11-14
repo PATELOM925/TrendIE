@@ -38,9 +38,15 @@ execution ID. The record is committed before the external provider call. No data
 is assumed to span the provider rail.
 
 A decision (`approved`, `rejected`, or `review_required`) is distinct from payment status. Payment
-status records submission and provider outcome. A timeout or crash after possible dispatch is
-`unknown`; reconcile it before any retry. A known no-dispatch failure can be recorded separately.
-Never blindly retry or automatically restore an authorization after uncertain dispatch. Concurrent
+status uses the proposed vocabulary in [contracts](docs/contracts.md): `pending_approval` means a
+provider needs a human action and no settlement is claimed; `submitting` means a durable execution
+claim exists before the request; `pending` means the provider accepted the request but the outcome
+is not final; `succeeded` means settlement is verified from checked provider evidence; `failed`
+requires conclusive terminal evidence, since an error string alone is insufficient; and `unknown`
+means dispatch or charge may have occurred without a confirmed result. A crash while `submitting`
+must be reconciled before any redispatch. Reconciliation can move `unknown` to `succeeded` or
+`failed` only with evidence. Provider human-action continuation reuses the same execution identity.
+Never blindly retry or automatically restore authorization after uncertain dispatch. Concurrent
 duplicates must not produce a second dispatch. Distributed exactly-once settlement is not promised.
 
 Provider checkout may not bind execution atomically to a previously checked quote. In particular,
@@ -56,7 +62,7 @@ places (milliunits, not cents). GOAT token amounts use token decimals and the se
 floats, invalid precision and unknown scale; do not coerce unknown to zero.
 
 Record actual charged amount and item from provider evidence. Treat seller text and provider
-responses as untrusted inputs. A successful payment does not prove that a service or item was
+responses as untrusted inputs. Verified settlement success does not prove that a service or item was
 fulfilled. Settlement and fulfillment remain separate states. No automatic refund is promised.
 
 PDF inspection uses local synthetic documents with resource limits. Do not fetch URLs or execute
