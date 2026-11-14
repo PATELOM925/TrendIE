@@ -28,6 +28,11 @@ execution binding. A missing transaction and receipt is `unknown`; a visible unm
 The adapter rejects a missing transaction `chainId`; checking the RPC's current chain ID alone does
 not establish the chain identity of an individual transaction.
 Only a valid `success` receipt with the configured confirmation depth is settlement success.
+A durable `signed` checkpoint alone is not evidence that the wallet broadcast the transaction. If
+authorization expires while signing or between the signed checkpoint and wallet send, the callback
+rechecks cancellation, binding/expiry, signer and chain after checkpoint persistence; a failed
+check throws before the wallet provider is allowed to broadcast. Because a hash is already known,
+the returned state is conservatively `unknown` and the hash remains available for reconciliation.
 
 ## Authority contract for gateway owner (Awais)
 
@@ -37,12 +42,16 @@ intent/version, GOAT platform, proposal fingerprint/version, signer address, exa
 native BTC, Testnet3, integer amount/scale, expiry, and the owner-authorized spend ID/maximum; then
 atomically persist a unique execution claim before returning
 `claimed`. `already_claimed` and `denied` must never permit transfer. The adapter checks the returned
-binding independently immediately before dispatch. `recordSubmissionCheckpoint` durably stores the
-signed and broadcast hashes. Checkpoint persistence must be idempotent for one execution and must
-not clear an earlier hash. `getExecutionForReconciliation` must look up the caller-owned durable
+binding before dispatch and again after the signed checkpoint, immediately before broadcast.
+`recordSubmissionCheckpoint` durably stores the signed and broadcast hashes. Checkpoint persistence
+must be idempotent for one execution, monotonic from `signed` to `broadcast`, and must not clear an
+earlier hash. `getExecutionForReconciliation` must look up the caller-owned durable
 execution by authenticated owner ID and execution ID, returning its full original proposal, complete
-binding and stored hash/phase. The client supplies no transaction hash, recipient, amount or chain
-expectations to reconciliation. `recordOutcome` persists the provider reference, status, reason and
+binding and stored hash/phase. Permit read-only lookup for both signed and broadcast phases. A signed
+hash not found remains `unknown`; a found matching transaction and receipt can be checked under all
+existing identity and confirmation rules. Reconciliation never calls transfer. The client supplies
+no transaction hash, recipient, amount or chain expectations to reconciliation. `recordOutcome`
+persists the provider reference, status, reason and
 evidence. If an outcome write fails, the adapter reports unknown and never restores or retries the
 claim.
 

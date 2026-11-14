@@ -1,8 +1,8 @@
 # TrendIE — Agentic Payment Guard
 
-**Status:** QPE local workspace, contracts, read-only Qatom MCP client and guarded adapter library
-are implemented with offline tests. No gateway, frontend, authenticated provider schema or live
-payment integration is implemented.
+**Status:** local QPE, AAT and GOAT libraries and offline integration fixtures are implemented.
+There is no Awais-owned gateway, Nassar frontend, authenticated Qatom schema or verified live
+payment integration. Project Stages 1–3 remain open.
 
 Start with:
 
@@ -21,5 +21,6 @@ Start with:
 - [Glossary](GLOSSARY.md)
 - [Changelog](CHANGELOG.md)
 
-The version 1 contracts remain a QPE proposal until other owners align on them. Local fake tests
-are not evidence of live payment, testnet activity, gateway controls or production settlement.
+The version 1 contracts and gateway ports remain proposals until their owners align on them. Local
+fixture authority is test-only. Local checks are not evidence of live payment, gateway controls or
+production settlement. See [current context](CONTEXT.md) for stage-by-stage evidence and next steps.

@@ -1,14 +1,13 @@
 # Implementation plan
 
-This plan preserves the original six stages and five role scopes from [Division.md](../Division.md). The docs foundation is separate pre-stage planning; it does not complete Stage 1. Priorities are QPE first, AAT next, and GOAT opportunistically through Stage 3. All runtime stages remain pending. Product priorities remain in [PRD.md](../PRD.md).
+This plan preserves the original six stages and five role scopes from [Division.md](../Division.md). The docs foundation and local implementations are recorded separately from project-stage acceptance. QPE, AAT and GOAT have local code and synthetic tests, while all project stages remain open because owner, authenticated provider and live evidence gates remain. Product priorities remain in [PRD.md](../PRD.md).
 
 ## Pre-stage — Planning and docs foundation
 
-The initial docs foundation records proposed contracts, architecture, risks, owners and acceptance.
-The owner-approved exception dated 2026-11-14 permits QPE, then Om AAT and GOAT work to stack on
-`om/QPE`, with dependent PRs targeting QPE until owner merge. This does not imply contract
-alignment by Awais or Nassar. Local QPE runtime scaffolding and offline tests now exist; this does
-not prove provider access or complete a runtime stage.
+The owner-approved exception dated 2026-11-14 permits PR #1 QPE → `main`, PR #2 AAT → QPE, and
+planned PR #3 GOAT → AAT. The owner controls dependency retargeting and merging; no stack layer
+auto-merges. This does not imply contract alignment by Awais or Nassar. Local code and fake tests do
+not prove provider access or complete a project stage.
 
 ## Stage 1 — Foundation (pending)
 
@@ -20,7 +19,7 @@ not prove provider access or complete a runtime stage.
 | Person 4 / AAT, Om | Create clean and malicious listing fixtures. |
 | Person 5 / Nassar | Scaffold frontend and shared deployment. |
 
-**Stage checkpoint:** QPE local workspace, shared schemas, and fake-backed adapter tests are implemented. Authenticated tool inventory remains unverified (unauthenticated endpoint returned 401); Stage 1 is not complete. The exact-price P0 gate blocks live checkout, but not local work.
+**Stage checkpoint:** Local implementation evidence: QPE workspace/contracts/adapters; AAT clean and malicious synthetic fixtures; GOAT Testnet3 adapter config without a wallet. Live/owner evidence: authenticated Qatom tools are unverified (unauthenticated endpoint returned 401); no GOAT wallet was configured; Awais policy and Nassar frontend are absent here. Stage 1 remains pending. Exact-price P0 blocks Qatom checkout, not local development.
 
 ## Stage 2 — Core flow (pending)
 
@@ -32,7 +31,7 @@ not prove provider access or complete a runtime stage.
 | Person 4 / AAT, Om | Build the purchasing agent and structured proposal generation. |
 | Person 5 / Nassar | Connect intent and payment screens. |
 
-**Stage checkpoint:** Demonstrate each branch's acceptance with evidence. Qatom checkout remains disabled unless exact price and spend can be enforced safely; discovery and local development can proceed independently.
+**Stage checkpoint:** Local implementation evidence: AAT proposal workflow and PDF inspection use local fixtures; GOAT native transfer compiles and its fake wallet path is tested; Qatom read-only client supports discovery shape. AAT/PDF checks ran locally, but no live model call occurred. Live evidence: no GOAT transaction, no authenticated Qatom discovery and no approved numeric ceiling (user only said “keep it low”). Stage 2 remains pending. Qatom checkout stays disabled pending exact price binding, receipt facts, gateway and paid authorization.
 
 ## Stage 3 — Integration (pending)
 
@@ -44,7 +43,7 @@ not prove provider access or complete a runtime stage.
 | Person 4 / AAT, Om | Implement injection inspection and PDF extraction. |
 | Person 5 / Nassar | Integrate decisions, receipts and audit views. |
 
-**Stage checkpoint:** Verify each connected path through public interfaces and retain provider evidence. Baseline authorization and duplicate-execution tests are required while Stage 3 interfaces are implemented; security testing is not deferred to Stage 4. Verify GOAT chain ID `48816` before submission. A Noop or simulated result is not payment evidence.
+**Stage checkpoint:** Public-export local fixtures compose AAT proposal output with Qatom using explicitly fake authority, transport, atomic-bound capability and receipt. They test valid synthetic settlement projection, seller variation denied before transport and concurrent duplicate claimed once. A second fixture exercises GOAT signed-only hash recovery with a read-only fake RPC and no signer/broadcast. These are not Awais's gateway. GOAT exposes a proposed authority port with atomic claim, durable signed/broadcast checkpoint and authenticated read-only reconciliation lookup. No production gateway implements either shape here. Last GOAT live evidence is a read-only chain `48816` / block `18260370` probe only; no signer or transaction. Qatom live price binding and gateway integration are absent. Stage 3 remains pending.
 
 ## Stage 4 — Security testing (pending)
 

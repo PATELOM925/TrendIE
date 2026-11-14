@@ -10,7 +10,8 @@
     "packages/contracts",
     "packages/inspection",
     "packages/agent",
-    "packages/qatom"
+    "packages/qatom",
+    "packages/goat"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

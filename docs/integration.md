@@ -1,7 +1,8 @@
 # QPE integration boundary
 
-**Status:** local library contracts implemented, proposed for owner alignment. No gateway, frontend
-or real Qatom checkout implementation exists here. Current evidence and blockers are in
+**Status:** local QPE/AAT/GOAT libraries and fake integration fixtures exist, but the library
+contracts remain proposed for owner alignment. No gateway, frontend or real Qatom checkout
+implementation exists here. Current evidence and blockers are in
 [CONTEXT.md](../CONTEXT.md) and [questions](questions.md).
 
 ## QPE library imports
@@ -57,6 +58,45 @@ resume. Storage, transaction behavior, identity binding and migrations belong to
 
 No implementation of this port or database schema is included in QPE.
 
+## GOAT authority port and recovery boundary
+
+`@trendie/goat` has a separate proposed `GoatGatewayAuthority` shape in
+`packages/goat/src/types.ts`:
+
+- `claimExecution` receives authenticated `callerOwnerId`, opaque approval reference, complete
+  proposal and fingerprint, spend authorization, and current time. The adapter expects an atomic
+  one-use claim and the returned binding to include owner/intent/version, fingerprint, sender,
+  destination, asset, chain ID, amount/scale, expiry, spend authorization ID and maximum.
+- `recordSubmissionCheckpoint` stores `signed` and `broadcast` phases with the same execution ID
+  and transaction hash. Writes must be durable, idempotent and monotonic; they must never erase an
+  earlier known hash. A signed hash is a local signed-transaction checkpoint and does not prove
+  broadcast.
+- `getExecutionForReconciliation` receives only authenticated owner ID and durable execution ID.
+  It returns the stored proposal, complete binding, hash and phase. The adapter reads the chain for
+  either `signed` or `broadcast` checkpoints. It never submits during reconciliation. Missing,
+  mismatched or unconfirmed results remain `unknown`/`pending`; a matching transaction and receipt
+  can resolve success or failure using the normal chain, sender, destination, amount and depth
+  checks.
+- `recordOutcome` persists the checked outcome/evidence. A write failure remains `unknown` and
+  cannot clear or reissue the claim.
+
+The QPE `GatewayAuthority` differs: it receives `TrustedCaller`, proposal and fingerprint in
+`claimExecution`, exposes `recordOutcome(executionId, result)`, and has `claimContinuation` for a
+provider human-action flow. It has no provider hash checkpoint or reconciliation-read method in its
+current port. These ports are not interchangeable and neither has Awais's implementation or
+acceptance. Awais owns the server storage schema, atomic claim transaction, concurrency control,
+durability, owner authorization and migration strategy. In particular, GOAT needs an owner-scoped
+execution read path and append/monotonic submission checkpoints; QPE continuation needs atomic
+claiming of the same provider reference and execution identity. Align these exact differences before
+combining the adapters behind one gateway API. No direct payment path bypasses gateway authority.
+
+There is no database transaction spanning an external provider write. Awais must persist the
+execution claim before adapter dispatch, retain a signed hash even if later broadcast persistence
+fails, and recover uncertain dispatch through reads. GOAT's callback revalidates signal, owner-bound
+binding, expiry, signer and chain after the signed checkpoint persists and before the wallet may
+broadcast. Expiry at that point stops broadcast but leaves a known hash and conservatively returns
+`unknown` for reconciliation.
+
 ## Provider capability and receipt dependency
 
 `BoundCheckoutCapability.supportsAtomicPriceBound` must verify the actual tool's schema and a
@@ -93,7 +133,9 @@ Nassar owns the presentation and system integration implementation.
 
 ## Local evidence and stage boundary
 
-The test suite uses local fake authority, transport, checkout capability and receipt verifier only;
-it makes no network calls. The unauthenticated capability probe returned 401. Stage 1 live auth and
-tool inventory are unverified, Stage 2 live discovery is unverified, and Stage 3 gateway-backed
-execution is unimplemented. No funds, chain or production state was touched.
+The test suite uses local fake authority, transport, checkout capability, signer and receipt verifier
+only; it makes no network calls. Public fixtures cover AAT → Qatom proposal flow and GOAT signed-hash
+recovery. They are separate from Awais's production gateway. The unauthenticated capability probe returned 401. Stage 1 live auth and tool
+inventory are unverified, Stage 2 live discovery/payment is unverified, and Stage 3 gateway-backed
+execution is unimplemented. GOAT's separate live evidence is only a read-only RPC chain/block probe.
+No funds, transaction, or production state was touched.
