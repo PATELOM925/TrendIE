@@ -3,7 +3,7 @@ import { PaymentResultSchema } from '../schemas/index.js';
 import { withTransaction } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
 import { appendAuditLog } from '../audit/hashChain.js';
-import { canTransition, normalizeStatus, sameOutcome } from '../executions/state.js';
+import { canTransition, normalizeStatus, sameOutcome, validOutcome } from '../executions/state.js';
 
 export const executionRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/executions/:id/result', { preHandler: [requireRole('adapter-goat', 'adapter-qatom', 'admin')] }, async (req, reply) => {
@@ -28,7 +28,7 @@ export const executionRoutes: FastifyPluginAsync = async (fastify) => {
           if (!canTransition(row.status, payment) || (row.tx_hash_or_checkout_ref && row.tx_hash_or_checkout_ref !== payment.txHashOrCheckoutRef)) return { code: 409, error: 'EXECUTION_CONFLICT' };
           await client.query('UPDATE executions SET status=$2, platform=$3, tx_hash_or_checkout_ref=$4, error=$5, evidence=$6, updated_at=NOW() WHERE execution_id=$1', [id, normalizeStatus(payment.status), payment.platform, payment.txHashOrCheckoutRef, payment.error, JSON.stringify(payment.evidence)]);
         } else {
-          if (!['succeeded', 'failed', 'unknown', 'pending_unknown'].includes(payment.status) || (payment.status === 'succeeded' && (!payment.txHashOrCheckoutRef || !Object.keys(payment.evidence).length)) || (payment.status === 'failed' && !Object.keys(payment.evidence).length)) return { code: 409, error: 'INVALID_INITIAL_OUTCOME' };
+          if (!validOutcome(payment)) return { code: 409, error: 'INVALID_INITIAL_OUTCOME' };
           await client.query('INSERT INTO executions (id, execution_id, approval_id, status, platform, tx_hash_or_checkout_ref, error, evidence, created_at, updated_at) VALUES (gen_random_uuid()::text, $1, $2, $3, $4, $5, $6, $7, NOW(), NOW())', [id, approval.id, normalizeStatus(payment.status), payment.platform, payment.txHashOrCheckoutRef, payment.error, JSON.stringify(payment.evidence)]);
         }
         const persisted = { ...payment, status: normalizeStatus(payment.status) };

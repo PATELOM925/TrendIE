@@ -2,6 +2,7 @@ ALTER TABLE approvals ADD COLUMN IF NOT EXISTS consumed_platform VARCHAR(16) CHE
 ALTER TABLE executions ADD COLUMN IF NOT EXISTS evidence JSONB NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE executions ALTER COLUMN tx_hash_or_checkout_ref TYPE VARCHAR(512);
 ALTER TABLE executions DROP CONSTRAINT IF EXISTS executions_status_check;
+UPDATE executions SET status = 'unknown' WHERE status = 'pending_unknown';
 ALTER TABLE executions ADD CONSTRAINT executions_status_check CHECK (status IN ('pending_approval', 'submitting', 'pending', 'unknown', 'succeeded', 'failed', 'blocked'));
 CREATE OR REPLACE FUNCTION prevent_audit_log_truncate() RETURNS TRIGGER AS $$
 BEGIN
