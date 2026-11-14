@@ -1,14 +1,15 @@
 # Current context
 
-**Checked:** 2026-11-14. This checkout is pinned to `om/GOAT` at
-`139e5dab964bb77e47a8290d5e9cd880de7a03a8`. Current published heads recorded for this integration
+**Checked:** 2026-11-14. Om PR #1/#2/#3 are merged to `develop` at `b576c12`. This candidate combines
+that integration with pinned Awais source `0b7d110` and scoped gateway test-safety changes. Awais
+remains HOLD pending gateway/payment authority fixes; this candidate is not a live checkout or
+adversarial clearance. Qatom legacy HTTP behavior is fail-closed. Current published heads recorded for this integration
 are Om PR #1 QPE `7fe5e24c1668ee674223f0849a84f39150310966`, PR #2 AAT
 `a0d57e3580a565e00d5037a1d4241ed84db204d4`, PR #3 GOAT
 `139e5dab964bb77e47a8290d5e9cd880de7a03a8`, and Awais branch
 `origin/awais/security-backend` `5a9d3d4283e680ed8aa68de00fe8a677889af1be`. All three Om PRs are
 open. Awais's branch has no PR recorded here. Nassar's frontend and a Tirth branch are not visible.
-The requested Claude Opus 5.5 medium adversarial review is pending; these docs do not report its
-verdict or imply integration, fixes, or previews exist.
+No new adversarial clearance is recorded; see [integration review](docs/reviews/2026-11-14-integration.md).
 
 The owner-approved workflow is to combine the reviewed/fixed branches on `develop`, resolve and
 preview integration there, and keep `main` for production. PR #1 targets `develop`; #2 remains based

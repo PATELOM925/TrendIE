@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { loadConfig } from '../src/config.js';
+import { guardedTestDatabaseUrl, loadConfig } from '../src/config.js';
 import { buildServer } from '../src/server.js';
 
 describe('Server & Config Bootstrap', () => {
   it('validates environment config strictly', () => {
     const validEnv = {
+      NODE_ENV: 'test',
+      TEST_DATABASE_URL: 'postgresql://postgres:password@localhost:5432/payment_guard_test',
       DATABASE_URL: 'postgresql://postgres:password@localhost:5432/test',
       APPROVAL_HMAC_SECRET: 'super-secret-key-that-is-at-least-32-chars-long',
       APPROVAL_KEY_ID: 'k1',
@@ -17,8 +19,15 @@ describe('Server & Config Bootstrap', () => {
     };
 
     const cfg = loadConfig(validEnv);
-    expect(cfg.DATABASE_URL).toBe(validEnv.DATABASE_URL);
+    expect(cfg.DATABASE_URL).toBe(validEnv.TEST_DATABASE_URL);
     expect(cfg.APPROVAL_TTL_SECONDS).toBe(300);
+  });
+
+  it('requires an explicitly named test database without revealing URL contents', () => {
+    expect(() => guardedTestDatabaseUrl({ NODE_ENV: 'test' })).toThrow('TEST_DATABASE_URL');
+    expect(() => guardedTestDatabaseUrl({ NODE_ENV: 'test', TEST_DATABASE_URL: 'postgresql://secret@host/db' })).toThrow('_test');
+    expect(() => guardedTestDatabaseUrl({ NODE_ENV: 'development', TEST_DATABASE_URL: 'postgresql://secret@host/db_test' })).toThrow('NODE_ENV=test');
+    expect(guardedTestDatabaseUrl({ NODE_ENV: 'test', TEST_DATABASE_URL: 'postgresql://fake@127.0.0.1/db_test' })).toContain('/db_test');
   });
 
   it('fails config validation when secret is too short', () => {

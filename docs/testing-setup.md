@@ -24,20 +24,26 @@ npm run test:pdf
 Record exact branch/head and command results. `npm ci` uses the committed lockfile. These checks
 exercise local code and fixtures; they do not verify sponsor credentials or provider behavior.
 
-## Gateway integration (Awais package)
+## Gateway checks (separate package)
 
 The submitted gateway is a separate package/workspace with its own `package.json` and currently
 declares `pnpm@12.18.0`; inspect its scripts and lockfile at the pinned head rather than assuming
 the README's older pnpm floor or this npm workspace applies. Node type declarations also differ
 from this root workspace. Do not force-lockfile or version changes as part of setup.
 
-For integration, use a disposable local Postgres instance and only the gateway's documented local
-configuration. Ensure no production URL or secret is present before starting it. The gateway owner
-must document migration ordering and local initialization. A contributor can start the disposable
-database and run locally documented migrations only after the owner supplies that safe procedure;
-never point this setup at shared or production databases. Then run the gateway's exact install,
-build, typecheck and test scripts and record their results against the exact combined `develop`
-head.
+Install with `pnpm install --ignore-scripts` from `gateway/`. Root scripts `gateway:typecheck`,
+`gateway:lint`, `gateway:build` and `gateway:test:unit` invoke the isolated gateway package tools;
+they are distinct from root checks. Unit tests use a fake `gateway_test` URL and do not connect.
+
+**Database safety gate:** any gateway configuration loaded with `NODE_ENV=test` requires an
+explicit `TEST_DATABASE_URL`. Its PostgreSQL database pathname must end in `_test`. The gateway
+replaces runtime `DATABASE_URL` only with that validated URL; it never falls back to
+`DATABASE_URL`. Missing or invalid configuration fails before pool construction, and errors omit
+URL contents. The integration tests run migrations and `TRUNCATE`; do not run them unless an
+isolated disposable test database is explicitly configured. Never run them with shared or
+production credentials. `gateway:test:integration` does not supply a URL: set `NODE_ENV=test`
+and `TEST_DATABASE_URL=postgresql://.../something_test` explicitly after provisioning the local
+database. No database tests were run as part of safe-default checks.
 
 After interface alignment and code fixes, exercise synthetic register-intent → verify → consume →
 record-outcome → audit against the local HTTP service. Assert persisted owner/intent binding,

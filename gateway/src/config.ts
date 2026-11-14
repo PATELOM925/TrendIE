@@ -20,8 +20,29 @@ const envSchema = z.object({
 
 export type Config = z.infer<typeof envSchema>;
 
+export function guardedTestDatabaseUrl(env: Record<string, string | undefined>): string {
+  if (env.NODE_ENV !== 'test') {
+    throw new Error('Database tests require NODE_ENV=test');
+  }
+  const value = env.TEST_DATABASE_URL;
+  if (!value) throw new Error('Database tests require TEST_DATABASE_URL');
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error('TEST_DATABASE_URL must be a valid PostgreSQL URL');
+  }
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol) || !parsed.pathname.replace(/^\//, '').endsWith('_test')) {
+    throw new Error('TEST_DATABASE_URL database name must end in _test');
+  }
+  return value;
+}
+
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
-  const parsed = envSchema.safeParse(env);
+  const runtimeEnv = env.NODE_ENV === 'test'
+    ? { ...env, DATABASE_URL: guardedTestDatabaseUrl(env) }
+    : env;
+  const parsed = envSchema.safeParse(runtimeEnv);
   if (!parsed.success) {
     const errorMessages = parsed.error.issues.map(
       (iss) => `${iss.path.join('.')}: ${iss.message}`
