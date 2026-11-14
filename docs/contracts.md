@@ -1,6 +1,8 @@
 # Shared contracts (proposed)
 
-**Status:** Proposed; pending Awais and Nassar alignment. These are conceptual fields, not generated schemas or existing APIs. Keep money as integer strings plus explicit asset scale; reject floats.
+**Status:** Version 1 schemas and TypeScript types are implemented in `packages/contracts`. They
+remain Om's proposed QPE boundary and have not been aligned or accepted by Awais or Nassar. The
+gateway must implement `GatewayAuthority`; no production authority exists in this repository.
 
 | Record | Proposed fields | Owner |
 |---|---|---|
@@ -17,6 +19,7 @@ Decision status and payment status are separate. Decisions describe authorizatio
 
 | Payment status | Meaning |
 |---|---|
+| `blocked` | Adapter refused before provider dispatch. It may have no execution ID if no durable claim was created. It is not a settlement outcome. |
 | `pending_approval` | Provider requires a human action to continue; no settlement is claimed. Continue under the same execution identity. |
 | `submitting` | Durable execution claim is recorded before the provider request. After a crash, do not redispatch automatically; reconcile first. |
 | `pending` | Provider accepted the request, but the outcome is not final. |
@@ -43,4 +46,4 @@ Use base-10 integer strings and an explicit scale. Qatom USD-TDN uses scale 3. G
 
 ## Open contract gate
 
-Qatom may set the price at checkout and may not accept an expected maximum price atomically with purchase. This is unresolved. Re-reading a quote immediately before checkout is not an atomic bound. Do not enable live Qatom execution until a safe provider capability or separately reviewed mitigation is verified.
+Qatom may set the price at checkout and may not accept an expected maximum price atomically with purchase. This is unresolved. Re-reading a quote immediately before checkout is not an atomic bound. The real MCP transport exposes no write operation and the guarded adapter requires a separately injected capability provider to validate the actual tool schema and construct bound arguments. Tests use local fakes only. Do not enable live Qatom execution until a safe provider capability or separately reviewed mitigation is verified.

@@ -4,7 +4,11 @@ This plan preserves the original six stages and five role scopes from [Division.
 
 ## Pre-stage — Planning and docs foundation
 
-The current documentation records proposed contracts, architecture, risks, owners and acceptance. It provides no proof of runtime capability, provider access, tests or completed stage work. Runtime code slices start from fresh `origin/main` after this foundation lands and use focused PRs; do not carry foundation commits into code PRs.
+The initial docs foundation records proposed contracts, architecture, risks, owners and acceptance.
+The owner-approved exception dated 2026-11-14 permits QPE, then Om AAT and GOAT work to stack on
+`om/QPE`, with dependent PRs targeting QPE until owner merge. This does not imply contract
+alignment by Awais or Nassar. Local QPE runtime scaffolding and offline tests now exist; this does
+not prove provider access or complete a runtime stage.
 
 ## Stage 1 — Foundation (pending)
 
@@ -16,7 +20,7 @@ The current documentation records proposed contracts, architecture, risks, owner
 | Person 4 / AAT, Om | Create clean and malicious listing fixtures. |
 | Person 5 / Nassar | Scaffold frontend and shared deployment. |
 
-**Stage checkpoint:** Record evidence for each role's acceptance; docs alone do not pass this stage. The expected next focused PR is QPE's Stage 1 capability check. An exact-price P0 gate may block live checkout, but does not block read-only discovery or local work.
+**Stage checkpoint:** QPE local workspace, shared schemas, and fake-backed adapter tests are implemented. Authenticated tool inventory remains unverified (unauthenticated endpoint returned 401); Stage 1 is not complete. The exact-price P0 gate blocks live checkout, but not local work.
 
 ## Stage 2 — Core flow (pending)
 
@@ -44,7 +48,7 @@ The current documentation records proposed contracts, architecture, risks, owner
 
 ## Stage 4 — Security testing (pending)
 
-Compare protected and intentionally unprotected attack scenarios, then cover mismatches, expiry, replay, concurrent duplicates, checkout authorization, provider failure and uncertain outcomes. Show that unauthorized proposals are blocked and legitimate proposals remain possible. Exercise reconciliation, malicious seller/provider output and resource-limited PDF inspection. Add runtime tests through public interfaces as those interfaces exist; no test suite exists now.
+Compare protected and intentionally unprotected attack scenarios, then cover mismatches, expiry, replay, concurrent duplicates, checkout authorization, provider failure and uncertain outcomes. Show that unauthorized proposals are blocked and legitimate proposals remain possible. Exercise reconciliation, malicious seller/provider output and resource-limited PDF inspection. A local QPE suite now covers contract behavior and fake-backed adapter boundaries; broader Awais gateway, Qatom live capability, AAT and GOAT security tests remain pending through public interfaces.
 
 **Stage checkpoint:** Reproducible attack and failure evidence demonstrates protected/unprotected behavior and does not overstate simulated or unknown outcomes.
 

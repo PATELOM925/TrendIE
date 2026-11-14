@@ -1,10 +1,9 @@
 # Contribution rules
 
-Read this entry point before changing the repository. This repository is currently planning-only:
-there is no package manifest, runtime implementation or test suite. Do not describe a proposed
-component or check as implemented. The product scope is in [PRD.md](PRD.md), original role plan
-and dated ownership override are in [Division.md](Division.md), and verified status is in
-[CONTEXT.md](CONTEXT.md).
+Read this entry point before changing the repository. The QPE branch now has a Node 22 workspace,
+shared contracts, a read-only Qatom MCP client, a guarded adapter library and offline tests. It has
+no gateway authority, frontend, authenticated provider schema evidence or verified live checkout.
+Read [CONTEXT.md](CONTEXT.md) for current status and do not describe fake-tested behavior as live.
 
 ## Owners and gates
 
@@ -15,15 +14,16 @@ and dated ownership override are in [Division.md](Division.md), and verified sta
 - Preserve original role numbers and scopes. See [Division.md](Division.md) and [the plan](docs/plan.md).
 - No direct writes to `main`. Use a focused PR to `main`, with small objective commits. The owner
   controls merge and deployment. No contributor merges or deploys.
-- Every code slice starts from fresh `origin/main` after the docs foundation lands. Do not carry
-  foundation commits into code PRs.
+- The owner-approved 2026-11-14 stacked-work exception is recorded in [Division.md](Division.md):
+  Om may continue on `om/QPE`; later Om AAT and GOAT slices may build on QPE and target QPE until
+  its dependency is merged. This does not imply Awais or Nassar accepted these contract shapes.
 - All orchestration, planning and implementation review for this project use GPT 6.1 Sol. All
   builds and fixes use GPT 6 Luna. Before runtime work, Sol reviews scope, interfaces, edge cases,
   control points and acceptance. Sol reviews the built result and fixes. Final adversarial review
   starts only when Om explicitly requests a specified PR scope, using Claude API credits,
   `claude-opus-5-5`, medium effort. Do not run it automatically or substitute another provider.
-- Never merge, deploy, apply a migration or write to production. This project currently has no
-  runtime gates. Do not claim checks exist until they are added and run.
+- Never merge, deploy, apply a migration or write to production. Report checks only when they exist
+  and have been run on the head under discussion; local checks do not prove live capabilities.
 - Do not add generator footers or co-author trailers.
 
 ## Design rules
@@ -44,6 +44,9 @@ and dated ownership override are in [Division.md](Division.md), and verified sta
 - [Contribution workflow](CONTRIBUTING.md)
 - [Proposed architecture](ARCHITECTURE.md)
 - [Current context](CONTEXT.md)
+- [QPE integration boundary](docs/integration.md)
+- [Open questions](docs/questions.md)
+- [Qatom runbook](docs/qatom-runbook.md)
 - [Plan and acceptance](docs/plan.md)
 - [Proposed contracts](docs/contracts.md)
 - [Threat model](docs/security.md)

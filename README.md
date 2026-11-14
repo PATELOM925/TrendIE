@@ -1,6 +1,8 @@
 # TrendIE — Agentic Payment Guard
 
-**Status:** planning-only foundation. No runtime application or payment integration is implemented.
+**Status:** QPE local workspace, contracts, read-only Qatom MCP client and guarded adapter library
+are implemented with offline tests. No gateway, frontend, authenticated provider schema or live
+payment integration is implemented.
 
 Start with:
 
@@ -9,12 +11,15 @@ Start with:
 - [Product requirements](PRD.md)
 - [Team roles](Division.md)
 - [Implementation plan](docs/plan.md)
-- [Proposed architecture](ARCHITECTURE.md)
-- [Proposed contracts](docs/contracts.md)
+- [Architecture and implementation boundary](ARCHITECTURE.md)
+- [Shared contracts](docs/contracts.md)
+- [QPE integration boundary](docs/integration.md)
+- [Open questions](docs/questions.md)
+- [Qatom runbook](docs/qatom-runbook.md)
 - [Threat model](docs/security.md)
 - [Hackathon facts and unknowns](docs/hackathon.md)
 - [Glossary](GLOSSARY.md)
 - [Changelog](CHANGELOG.md)
 
-The architecture, contracts and acceptance criteria are proposals until the named owners align on
-them. No payment, testnet transaction, or production control is claimed as implemented.
+The version 1 contracts remain a QPE proposal until other owners align on them. Local fake tests
+are not evidence of live payment, testnet activity, gateway controls or production settlement.

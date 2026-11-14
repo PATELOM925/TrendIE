@@ -1,7 +1,8 @@
 # Security model (proposed)
 
-See the [contracts](contracts.md) and [architecture](../ARCHITECTURE.md). This is a target threat
-model, not proof that controls exist.
+See the [contracts](contracts.md) and [architecture](../ARCHITECTURE.md). The QPE library now
+implements some local validation and adapter gates covered by offline tests. This model still
+describes the full target system; there is no gateway authority or verified provider execution.
 
 ## Assets and boundaries
 

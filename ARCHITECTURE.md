@@ -1,7 +1,8 @@
 # Architecture (proposed)
 
-This document describes a target design, not existing code. Current verified state is in
-[CONTEXT.md](CONTEXT.md). Contracts await owner alignment in [docs/contracts.md](docs/contracts.md).
+This document distinguishes implemented local QPE libraries from the target system. Current
+verified status is in [CONTEXT.md](CONTEXT.md). The gateway remains Awais-owned and is not
+implemented here; the adapter ports are not a production authority.
 
 ## Target layout
 

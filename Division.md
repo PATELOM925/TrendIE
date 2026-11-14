@@ -12,10 +12,13 @@ is next, and Person 2 (GOAT) is opportunistic. Nassar (repository contribution i
 owns Person 5 frontend and system integration. Awais owns Person 1 security, backend and
 authorization. See the current [implementation plan](docs/plan.md).
 
-The foundation is documentation only. Each implementation slice will use one focused PR with
-small objective commits. Code work starts from fresh `origin/main` after the documentation
-foundation lands. Do not copy the foundation commits into later PRs. Main remains the PR base.
-No direct main writes, merges or deployments. Om owns merge and deployment gates.
+The original foundation began as documentation only. **Owner-approved stacked-work exception
+(2026-11-14):** Om is explicitly authorized to continue QPE through Stage 3 on shared branch
+`om/QPE`, including runtime workspace, contracts and Qatom library work. Later Om AAT and GOAT
+slices may base on QPE and target QPE until the owner merges that dependency. This does not imply
+Awais or Nassar agreed to current contract shapes. Keep integration dependencies visible at their
+owned boundaries. Each slice remains focused with small commits. No direct main writes, merges or
+deployments. Om owns merge and deployment gates.
 
 For runtime work, GPT 6.1 Sol handles orchestration, planning and implementation review. GPT 6
 Luna builds and fixes. Sol checks scope, interfaces, edge cases, control points and acceptance
