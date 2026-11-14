@@ -4,6 +4,7 @@ import { Config, config as defaultConfig } from './config.js';
 import { authPlugin } from './auth/plugin.js';
 import { intentRoutes } from './routes/intents.js';
 import { verifyRoutes } from './routes/verify.js';
+import { approvalRoutes } from './routes/approvals.js';
 
 export async function buildServer(appConfig: Config = defaultConfig): Promise<FastifyInstance> {
   const app = Fastify({
@@ -22,6 +23,7 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
 
   await app.register(intentRoutes);
   await app.register(verifyRoutes);
+  await app.register(approvalRoutes);
 
   return app;
 }
