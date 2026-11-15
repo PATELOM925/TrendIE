@@ -31,6 +31,7 @@
     "demo:attack": "node scripts/demo-attack.mjs",
     "demo:goat": "node scripts/demo-goat-live.mjs",
     "demo:pdf": "node scripts/demo-pdf-attack.mjs",
+    "demo:replay": "node scripts/demo-replay-attack.mjs",
     "qatom:probe": "node packages/qatom/dist/cli.js"
   },
   "devDependencies": {
