@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Record Om-directed temporary cross-owner implementation coordination (2026-11-15); original
+  role assignments and acceptance ownership remain unchanged, and Awais retains deployment authority.
+- Merge pinned `origin/develop` `ca50884d0198aab0584e2b48615dfa6397bd3bda` into candidate
+  `e3607d220674777dc45c1397bfe7430a24b6c63f` at `48aca2976c83370850df886fa04ecdce870d6b4e`.
+  Keep GOAT authority runtime HOLD; no push, deployment, database, or provider activity occurred.
+
 - Update the project record with published PR #10 QPE (`afc1258`, 26 Qatom tests and read-only
   capability collector), published PR #11 AAT (`08016e6`, 35 agent tests) and draft PR #12 GOAT
   (`bdcf505`, complete V1 client and 32 GOAT tests). All target `develop`; none is merged and the

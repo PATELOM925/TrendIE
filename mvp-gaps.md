@@ -4,6 +4,12 @@
 
 **Owner mapping:** Person 1 — Awais; Persons 2, 3, and 4 — Om/Tirth; Person 5 — Nasar.
 
+**Coordination note (2026-11-15):** Om directed temporary cross-owner implementation coordination
+to reduce duplicate edits. Original role assignments and acceptance ownership remain unchanged;
+this is not evidence that owners accepted the shared authority contract or that a stage is complete.
+Awais retains deployment authority. The candidate integration preserves gateway source, but the
+new GOAT authority runtime remains HOLD pending review and verified binding behavior.
+
 ## MVP acceptance target
 
 PRD Section 12 requires an AI purchasing agent to discover a product, propose a transaction, and execute it through a security gateway integrated with GOAT or Qatom; the system must block prompt-injection-driven unauthorized purchases and record evidence. PRD Section 9 additionally calls for a real GOAT testnet transaction and an authenticated Qatom checkout where supported. Treat Qatom as unsupported only after checking its real capability and documenting that evidence.
