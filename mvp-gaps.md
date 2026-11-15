@@ -2,6 +2,8 @@
 
 **Reviewed against:** `PRD.md`, `Division.md`, current `origin/develop` at `9133094`, and the team update supplied on 2026-11-15. `main` contains this develop line through PR #8 at `0c08845`.
 
+**Owner mapping:** Person 1 — Awais; Persons 2, 3, and 4 — Om/Tirth; Person 5 — Nasar.
+
 ## MVP acceptance target
 
 PRD Section 12 requires an AI purchasing agent to discover a product, propose a transaction, and execute it through a security gateway integrated with GOAT or Qatom; the system must block prompt-injection-driven unauthorized purchases and record evidence. PRD Section 9 additionally calls for a real GOAT testnet transaction and an authenticated Qatom checkout where supported. Treat Qatom as unsupported only after checking its real capability and documenting that evidence.
@@ -23,23 +25,23 @@ Escrow is a later optional stretch after the protected core works. A controlled 
 
 | Feature | Status | Accountable owner | Remaining acceptance |
 |---|---|---|---|
-| F-001 Trusted intent | Partial | Person 1; Person 5 UI contribution | Store and verify trusted owner/constraints in the dedicated database under the agreed shared schema. |
-| F-002 Verification/authorization | Partial | Person 1 | Bind exact, versioned proposal to an authenticated owner and intent; enforce expiry, single use, replay, and concurrency through the gateway. |
-| F-003 Gateway interception | Partial | Person 1; Persons 2–3 adapters | Adapters receive and enforce the persisted gateway binding; no local adapter code may construct authority from caller input. Prove unauthorized requests stop before provider dispatch. |
-| F-004 Inspection | Partial | Person 4; Person 5 upload/display | Preserve findings and provenance against the exact proposal/decision; test clean and malicious listing/PDF paths and document scanner limits. |
-| F-005 Attack comparison | Partial | Person 4; Person 5 demo integration | Run a controlled vulnerable agent with the same malicious input and capture its changed proposal/action; show the protected gateway rejection and a legitimate provider-backed purchase. No unsafe on-chain attack is needed. |
-| F-006 GOAT payment | Blocked | Person 2; Person 1 gateway | Persisted binding, checkpoints/recovery, isolated wallet, separate numeric spend authorization, one bounded Testnet3 payment, checked receipt, and persisted outcome. |
-| F-007 Qatom checkout | Blocked | Person 3; Person 1 gateway | Authenticated MCP/tool evidence, checkout schema, atomic exact-price/currency guarantee in the checkout operation, gateway-authorized execution, supported verified receipt, and documented limitations. |
-| F-008 Audit/outcome records | Partial | Person 1 | Durable linked intent, proposal, findings, decision, execution identity, provider result, and outcome with safe recovery from uncertainty. |
-| F-009 Dashboard/history | Partial | Person 5; Person 1 and provider owners | Owner-scoped reloadable history, payment lifecycle, actual provider receipts, and distinct pending/unknown states. Requires approved read APIs and provider result facts. |
-| F-010 Human review | Blocked | Person 1 API; Person 5 UI | Authenticated reviewer identity, owner-scoped review queue/read API, authorized resolution controls, audit record, and proof unresolved review cannot execute. |
-| F-013 Integrated demo readiness | Blocked | Person 5, with Persons 1–4 | One current-revision environment runs the protected flow, attack evidence, legitimate provider payment, supported Qatom path, and persisted audit/outcome view with truthful labels. |
+| F-001 Trusted intent | Partial | Person 1 / Awais; Person 5 / Nasar UI contribution | Store and verify trusted owner/constraints in the dedicated database under the agreed shared schema. |
+| F-002 Verification/authorization | Partial | Person 1 / Awais | Bind exact, versioned proposal to an authenticated owner and intent; enforce expiry, single use, replay, and concurrency through the gateway. |
+| F-003 Gateway interception | Partial | Person 1 / Awais; Persons 2–3 / Om/Tirth adapters | Adapters receive and enforce the persisted gateway binding; no local adapter code may construct authority from caller input. Prove unauthorized requests stop before provider dispatch. |
+| F-004 Inspection | Partial | Person 4 / Om/Tirth; Person 5 / Nasar upload/display | Preserve findings and provenance against the exact proposal/decision; test clean and malicious listing/PDF paths and document scanner limits. |
+| F-005 Attack comparison | Partial | Person 4 / Om/Tirth; Person 5 / Nasar demo integration | Run a controlled vulnerable agent with the same malicious input and capture its changed proposal/action; show the protected gateway rejection and a legitimate provider-backed purchase. No unsafe on-chain attack is needed. |
+| F-006 GOAT payment | Blocked | Person 2 / Om/Tirth; Person 1 / Awais gateway | Persisted binding, checkpoints/recovery, isolated wallet, separate numeric spend authorization, one bounded Testnet3 payment, checked receipt, and persisted outcome. |
+| F-007 Qatom checkout | Blocked | Person 3 / Om/Tirth; Person 1 / Awais gateway | Authenticated MCP/tool evidence, checkout schema, atomic exact-price/currency guarantee in the checkout operation, gateway-authorized execution, supported verified receipt, and documented limitations. |
+| F-008 Audit/outcome records | Partial | Person 1 / Awais | Durable linked intent, proposal, findings, decision, execution identity, provider result, and outcome with safe recovery from uncertainty. |
+| F-009 Dashboard/history | Partial | Person 5 / Nasar; Person 1 / Awais and provider owners | Owner-scoped reloadable history, payment lifecycle, actual provider receipts, and distinct pending/unknown states. Requires approved read APIs and provider result facts. |
+| F-010 Human review | Blocked | Person 1 / Awais API; Person 5 / Nasar UI | Authenticated reviewer identity, owner-scoped review queue/read API, authorized resolution controls, audit record, and proof unresolved review cannot execute. |
+| F-013 Integrated demo readiness | Blocked | Person 5 / Nasar, with Persons 1–4 / Awais, Om/Tirth | One current-revision environment runs the protected flow, attack evidence, legitimate provider payment, supported Qatom path, and persisted audit/outcome view with truthful labels. |
 
 F-011 escrow and F-012 delivery verification remain Stage 6/stretch work and do not block the core MVP.
 
 ## Shared contract and adapter binding — first priority
 
-Person 1 and the adapter owners must agree one versioned contract before frontend/platform mappings are implemented. The trusted binding must include:
+Person 1 / Awais and the adapter owners / Om-Tirth must agree one versioned contract before frontend/platform mappings are implemented. The trusted binding must include:
 
 - authenticated owner identity and trusted intent ID/version;
 - platform/provider and chain/network;
@@ -58,28 +60,28 @@ The gateway flow must atomically claim a single-use approval and persist an exec
 - Persist the authoritative owner/intent-version/platform/chain binding; provide atomic claim/consume and approved history, execution-recovery, and review-queue APIs.
 - Make the audit-safe test reset compatible with append-only protections; run isolated PostgreSQL migrations and endpoint, replay, concurrency, and recovery tests against a dedicated database.
 
-### Person 2 — GOAT, Tirth with Om
+### Person 2 — GOAT, Om/Tirth
 
 - Replace locally constructed authority with the persisted gateway binding.
 - Persist monotonic signed/broadcast checkpoints, checked outcomes, and safe uncertain-outcome reconciliation.
 - Obtain a separate numeric testnet spend authorization and isolated test wallet; perform one bounded Testnet3 payment and verify/persist its receipt.
 - Keep escrow after the protected core as a separate stretch gate.
 
-### Person 3 — Qatom, Om
+### Person 3 — Qatom, Om/Tirth
 
 - Verify authenticated MCP access and actual read/write tool schemas.
 - Establish whether checkout atomically binds approved price and currency in the same operation; a separate quote is insufficient.
 - Implement gateway-authorized checkout/continuation and conservatively handle retries and unknown results.
 - Validate and persist a supported provider receipt; document unsupported capabilities. Credentials/token configuration alone is not checkout evidence.
 
-### Person 4 — Agent, attack testing, and PDF, Om with Tirth
+### Person 4 — Agent, attack testing, and PDF, Om/Tirth
 
 - Run a reproducible controlled unprotected-agent attack and protected comparison using the same malicious input.
 - Capture the unprotected agent's changed proposal/action and the protected gateway rejection without sending an actual unauthorized payment.
 - Maintain clean/malicious listing and hidden-text PDF evidence, and link inspection findings to the exact proposal/decision.
 - Correct demo text that currently presents a printed transfer, consumed approval, or audit check as executed payment/settlement.
 
-### Person 5 — Nassar, frontend and system integration
+### Person 5 — Nasar, frontend and system integration
 
 - After contract approval, align frontend proposal types/forms and platform-specific amount/scale handling; do not invent compatibility mappings before then.
 - After Person 1 publishes the authenticated history/review/execution APIs, add owner-scoped history, review controls, outcome states, and actual receipt display. Keep unresolved reviews non-executable and approval distinct from payment success.
@@ -97,7 +99,7 @@ The gateway flow must atomically claim a single-use approval and persist an exec
 
 ## Immediate parallel work
 
-- Person 1 and adapter owners can negotiate the shared contract while the isolated database and safe reset are prepared.
-- Person 4 can build/record the controlled attack harness and clean/malicious fixtures without waiting for live provider execution.
-- Person 5 can correct current demo labels, prepare UI state designs, and set up the frontend against the agreed reachable PostgreSQL/Gateway environment. Final API wiring for history/review/receipts waits on approved contracts and endpoints.
+- Person 1 / Awais and adapter owners / Om-Tirth can negotiate the shared contract while the isolated database and safe reset are prepared.
+- Person 4 / Om-Tirth can build/record the controlled attack harness and clean/malicious fixtures without waiting for live provider execution.
+- Person 5 / Nasar can correct current demo labels, prepare UI state designs, and set up the frontend against the agreed reachable PostgreSQL/Gateway environment. Final API wiring for history/review/receipts waits on approved contracts and endpoints.
 - Provider owners can verify authentication/tool schemas and obtain numeric spend approvals in parallel with gateway contract work; do not enable or call paid execution until the required controls are present.
