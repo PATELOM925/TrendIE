@@ -139,6 +139,23 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .attack-submit-btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 18px; border-radius:9px; background:#c93b3b; color:#fff; font-weight:700; font-size:13px; border:0; box-shadow:0 4px 12px rgba(201,59,59,.25); }
 .attack-submit-btn:hover:not(:disabled) { background:#af2d2d; transform:translateY(-1px); }
 
+.pdf-upload { padding:18px 20px; margin:14px 0 18px; }
+.pdf-upload-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; }
+.pdf-upload-heading h2 { margin:0; font-size:15px; letter-spacing:-.025em; }
+.pdf-upload-heading p { margin:5px 0 0; color:var(--muted); font-size:11px; line-height:1.5; }
+.pdf-local-pill { flex:none; padding:5px 8px; border:1px solid #d8e7dd; border-radius:999px; background:#f2faf5; color:#326849; font-size:9px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.pdf-upload-form { display:flex; align-items:center; flex-wrap:wrap; gap:9px 13px; margin-top:14px; }
+.pdf-file-label { font-size:11px; font-weight:700; color:#5f5b55; }
+.pdf-upload-form input[type=file] { max-width:100%; font-size:11px; }
+.pdf-upload-form .form-hint { flex-basis:100%; margin-top:-5px; }
+.pdf-upload-message { margin:12px 0 0; }
+.pdf-result { margin-top:15px; border-top:1px solid #f0ede7; padding-top:13px; }
+.pdf-result-meta { display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; font-size:11px; color:#625f59; }
+.pdf-result-meta strong { color:var(--ink); overflow-wrap:anywhere; }
+.pdf-result details { margin-top:10px; }
+.pdf-result summary { cursor:pointer; color:var(--cobalt); font-size:11px; font-weight:700; }
+.pdf-limitations { padding-left:18px; color:var(--muted); font-size:10px; line-height:1.5; }
+
 
 @media (max-width: 900px) {
   .workspace { grid-template-columns:1fr; }
