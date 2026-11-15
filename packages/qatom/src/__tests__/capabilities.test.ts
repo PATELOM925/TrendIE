@@ -13,12 +13,16 @@ describe('sanitized Qatom capability evidence', () => {
     expect(a).toEqual(b);
     expect(a.checkout).toEqual({ toolPresent: true, atomicPriceCurrencyBinding: 'unknown', receiptGuarantee: 'unknown' });
     expect(a.tools[0].readOnly).toBe(false);
+    const reordered = await collectCapabilities({ clientFactory: factory(async () => [{ name: 'agent_checkout', inputSchema: { properties: { item_id: { type: 'string' } }, type: 'object' } }] as never) });
+    expect(reordered.tools[0].schemaFingerprint).toBe(a.tools[0].schemaFingerprint);
   });
 
   it('records sanitized auth challenges without leaking error text', async () => {
-    const evidence = await collectCapabilities({ token: 'secret-marker', endpoint: 'https://user:pass@example.test/mcp?token=secret-marker', clientFactory: factory(async () => { throw Object.assign(new Error('https://provider.test/?token=secret-marker WWW-Authenticate: Bearer'), { status: 401 }); }) });
-    expect(evidence).toMatchObject({ authenticated: true, status: 401, authChallenge: true, toolInventory: 'unavailable' });
+    let received: unknown;
+    const evidence = await collectCapabilities({ token: 'secret-marker', endpoint: 'https://example.test/mcp?region=ca', clientFactory: (async (input) => { received = input; return { listTools: async () => { throw Object.assign(new Error('secret'), { status: 401 }); }, close: async () => {} }; }) as never });
+    expect(evidence).toMatchObject({ tokenPresent: true, accessVerified: false, status: 401, authChallenge: true, toolInventory: 'unavailable' });
     expect(evidence.endpoint).toBe('https://example.test/mcp');
+    expect(received).toMatchObject({ endpoint: 'https://example.test/mcp?region=ca' });
     expect(JSON.stringify(evidence)).not.toMatch(/secret-marker|WWW-Authenticate|provider\.test/);
   });
 
@@ -35,5 +39,22 @@ describe('sanitized Qatom capability evidence', () => {
     expect(oversized.tools).toEqual([]);
     expect(oversized.checkout).toEqual({ toolPresent: false, atomicPriceCurrencyBinding: 'unknown', receiptGuarantee: 'unknown' });
     expect(JSON.stringify(oversized)).not.toContain('private-schema-marker');
+  });
+
+  it('rejects accessor schemas without invoking getters and rejects malformed names', async () => {
+    let called = false;
+    const schema = Object.defineProperty({}, 'type', { enumerable: true, get() { called = true; return 'object'; } });
+    const accessor = await collectCapabilities({ clientFactory: factory(async () => [{ name: 'okay', inputSchema: schema }] as never) });
+    expect(called).toBe(false);
+    expect(accessor.toolInventory).toBe('malformed');
+    const malformed = await collectCapabilities({ clientFactory: factory(async () => [{ name: 'invalid/tool', inputSchema: {} }] as never) });
+    expect(malformed.toolInventory).toBe('malformed');
+    expect(malformed.tools).toEqual([]);
+  });
+
+  it('bounds inventory size and total evidence', async () => {
+    const many = await collectCapabilities({ clientFactory: factory(async () => Array.from({ length: 201 }, (_, i) => ({ name: `tool${i}`, inputSchema: {} })) as never) });
+    expect(many.toolInventory).toBe('oversized');
+    expect(many.tools).toEqual([]);
   });
 });
