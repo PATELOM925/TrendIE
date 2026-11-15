@@ -25,6 +25,8 @@ npm run test:pdf
 
 ## Integration handoff
 
+For a UI consuming the current server-side fixture runner interface, see [AAT UI fixture integration](aat-ui-integration.md). This documents the public API and unit semantics without implying gateway or live-provider agreement.
+
 **Awais (gateway):** consume validated proposal output as untrusted input; bind authenticated owner and original intent from server state; revalidate all exact fields and policy; inspection must only add advisory evidence. Do not accept agent identity fields or any approval assertion. No authorization signature is defined by this package.
 
 **Nassar (evidence/status UI):** show listing provenance, proposal fields, inspection flags/offsets, source spans, and source (`scripted` vs `model`) separately. Mark findings advisory. Never imply a proposal is approved, purchased, settled, or fulfilled.

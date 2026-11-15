@@ -47,6 +47,10 @@ and a review queue because the gateway does not expose the required owner-scoped
 | Person 4 / AAT, Om | Published PR #11 at `08016e6` adds a controlled fixture harness: 35 agent tests across 6 files and 11 comparison cases. The clean and attack CLI runs both report `NOT_SETTLED`; the harness uses a synthetic policy, not the actual gateway. | CLI comparison is **NOT_SETTLED** for both clean and attack cases; no live LLM provider behavior is evidenced. Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons remain open. |
 | Person 5 / Nassar | Local Next.js Guard Console includes intent registration, synthetic proposal verification, live-model rejection, and transient bounded PDF extraction/verification. The UI uses only the local demo owner. | Owner-scoped persisted decision/evidence/outcome history, an authenticated review queue, provider receipts, shared cross-platform contract alignment, and end-to-end PostgreSQL verification remain open. |
 
+### Coordination follow-up (2026-11-15)
+
+Nasar reported local comparison attack/compliant cases, 121 tests and seven route checks in WhatsApp. Fetched `origin/nasar-frontend` is pinned at `14f9ec2` and has no corresponding comparison delta; those reported changes remain **UNVERIFIED** pending a pushed SHA. The sent and verified group response confirmed PR #11's runner interface for server-side fixture integration only; it did not approve merge or security clearance. Awais contract confirmation remains pending. The final `claude-opus-5-5` medium review is authorized when the specified work is ready and has not yet run. See [AAT UI fixture integration](docs/aat-ui-integration.md).
+
 The [integration matrix](docs/integration.md) separates the original reviewed defects from current
 mitigations. PRs #10, #11 and #12 are published or drafted against `develop`, and none is merged.
 The newer `develop` source still contains an active legacy GOAT client; do not describe both bridges
