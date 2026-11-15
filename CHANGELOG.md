@@ -2,14 +2,15 @@
 
 ## Unreleased
 
-- Update current context against `origin/develop` `dbfac42`: frontend and Tirth security branch
-  exist; Q009 frontend availability is answered, with owner-scoped history/review and provider UI
-  still open. Record AAT PR #11's 35 agent tests across 6 files and 11 comparison cases, while both
-  clean/attack CLI results remain `NOT_SETTLED`, use synthetic policy, and provide no live LLM
-  provider proof. Distinguish the historical `9ffdba5` review from newer runtime. PR #10 authority
-  draft (`e0ad1ab`) has no recorded agreement; Awais was notified on WhatsApp. Keep the active
-  legacy GOAT bridge disabled pending full trusted binding; Qatom collector and GOAT replacement
-  remain in review/uncommitted externally and unmerged. Q003 remains zero; no stage completion.
+- Update the project record with published PR #10 QPE (`afc1258`, 26 Qatom tests and read-only
+  capability collector), published PR #11 AAT (`08016e6`, 35 agent tests) and draft PR #12 GOAT
+  (`bdcf505`, complete V1 client and 32 GOAT tests). All target `develop`; none is merged and the
+  proposed contracts remain unagreed. Record that lost `executionId` recovery by owner-scoped
+  approval reference still requires an unimplemented server endpoint. Pin combined local candidate
+  checks at `6397e1710ab7559a908af621ad0bdd24cf55fccf` (Node 22.23.4, root typecheck/lint and 135
+  tests across 25 files); all five library builds and four PDF tests also passed. Both offline CLI modes remained `NOT_SETTLED`. These checks do not prove PR-head or
+  global integration. Keep paid execution at zero, provider/authentication/price/receipt gates open,
+  and all stages open with no final adversarial review claim.
 
 - Merge reviewed Om PRs #1–#3 and combined gateway PR #4 into develop. Final source 9ffdba5 is
   cleared for local/test integration only; main and production remain unchanged. Add the final
