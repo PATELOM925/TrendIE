@@ -1,5 +1,6 @@
-import { PurchaseProposalSchema, canonicalJson, type PurchaseProposal } from '@trendie/contracts';
+import { PurchaseProposalSchema, canonicalJson, proposalFingerprint, type PurchaseProposal } from '@trendie/contracts';
 import { inspectText, type InspectionResult } from '@trendie/inspection';
+import { createHash } from 'node:crypto';
 
 export type Listing = { itemId: string; sellerId: string; title: string; amount: string; scale: number; asset: string; description?: string; sourceRef?: string };
 export type Discovery = { search(query: string, signal: AbortSignal): Promise<unknown> };
@@ -7,6 +8,21 @@ export type Model = { propose(input: { task: string; listings: Listing[]; signal
 export type TrustedTask = { ownerId: string; intentId: string; intentVersion: number; platform: 'qatom' | 'goat'; chain: string; task: string; maxAmount: string; maxScale: number; asset: string };
 export type WorkflowResult = { proposal: PurchaseProposal; inspection: InspectionResult & { sources: Array<{ itemId: string; sellerId: string; start: number; end: number; sourceRef?: string }> }; source: 'scripted' | 'model' };
 export type Limits = { timeoutMs?: number; maxListings?: number; maxTextChars?: number; maxTurns?: number; maxToolCalls?: number };
+
+export type AttackEvidence = { attemptId: string; sourceRef: string; contentSha256: string; fingerprint: string; ownerId: string; intentId: string; intentVersion: number; inspection: InspectionResult; modelMode: 'fixture' | 'injected'; modelInput: unknown; modelOutput: unknown };
+export async function runControlledComparison(input: { task: TrustedTask; query: string; discovery: Discovery; model: Model; gateway: { verify(proposal: PurchaseProposal, evidence: AttackEvidence): Promise<{ decision: 'approve' | 'reject'; reasons: string[] }> }; wallet: { record(proposal: PurchaseProposal): Promise<void> }; source?: 'scripted' | 'model'; limits?: Limits }) {
+  const workflow = await runPurchaseWorkflow({ ...input, source: input.source ?? 'model' });
+  const sourceRef = workflow.inspection.sources[0]?.sourceRef;
+  if (!sourceRef) throw new Error('Evidence source missing');
+  const listing = validateListings(await input.discovery.search(input.query, new AbortController().signal), input.limits?.maxListings ?? 20)[0];
+  if (!listing) throw new Error('Evidence content missing');
+  const content = `${listing.title}\n${listing.description ?? ''}`;
+  const evidence: AttackEvidence = { attemptId: `attempt_${Date.now()}_${Math.random().toString(16).slice(2)}`, sourceRef, contentSha256: createHash('sha256').update(content).digest('hex'), fingerprint: proposalFingerprint(workflow.proposal), ownerId: input.task.ownerId, intentId: input.task.intentId, intentVersion: input.task.intentVersion, inspection: workflow.inspection, modelMode: input.source === 'scripted' ? 'fixture' : 'injected', modelInput: { task: input.task.task, listings: [listing] }, modelOutput: workflow.proposal };
+  await input.wallet.record(workflow.proposal);
+  const decision = await input.gateway.verify(workflow.proposal, evidence);
+  if (proposalFingerprint(workflow.proposal) !== evidence.fingerprint) throw new Error('Evidence fingerprint mismatch');
+  return { proposal: workflow.proposal, evidence, vulnerable: { action: 'recorded', dispatched: false }, protected: { ...decision, dispatched: false, outcome: decision.decision === 'approve' ? 'approved' : 'blocked' } };
+}
 
 const defaults = { timeoutMs: 5_000, maxListings: 20, maxTextChars: 100_000, maxTurns: 1, maxToolCalls: 1 };
 function validateLimits(input: Limits) {
