@@ -34,8 +34,8 @@ and token-exchange grants; PKCE `S256`; and token endpoint auth methods `client_
 `client_secret_post`, and `none`. This advertises OAuth with PKCE; it does not prove usable client
 registration, an approved redirect URI, required buyer scopes, effective token audience, successful
 login/consent, token issuance, or buyer access. The documentation URL was inaccessible to this
-review, so its contents are not claimed. No token request was received and no token was issued or
-tested. These metadata GETs made no auth/account writes and no paid calls.
+review, so its contents are not claimed. The secure token request expired without receiving a value; no token was issued or tested by
+this task. These metadata GETs made no auth/account writes and no paid calls.
 
 For setup, use an existing approved MCP client that supports OAuth PKCE, or request a
 provider-approved `client_id` and redirect URI. The user completes login and consent in that
@@ -77,7 +77,7 @@ tool-inventory availability, and tool names. It does not print schemas, token va
 response bodies or call tools. No checkout tool is invoked. The 2026-11-15 result above is pinned
 to candidate `53215e8`; rerun the probe to establish evidence for a different candidate.
 
-No secure token request/entry has been received. If a valid token is later provided through the
+The secure token request expired without receiving a value. If a valid token is later provided through the
 approved secret mechanism, inject `QATOM_MCP_TOKEN` into the probe process environment.
 Do not request or accept the token in chat, or place it in this repository, command arguments,
 terminal transcripts or logs. Current implementation supports a server-provided Bearer token only;
