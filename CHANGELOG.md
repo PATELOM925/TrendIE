@@ -8,7 +8,7 @@
   proposed contracts remain unagreed. Record that lost `executionId` recovery by owner-scoped
   approval reference still requires an unimplemented server endpoint. Pin combined local candidate
   checks at `6397e1710ab7559a908af621ad0bdd24cf55fccf` (Node 22.23.4, root typecheck/lint and 135
-  tests across 25 files); package builds were still running. These checks do not prove PR-head or
+  tests across 25 files); all five library builds and four PDF tests also passed. Both offline CLI modes remained `NOT_SETTLED`. These checks do not prove PR-head or
   global integration. Keep paid execution at zero, provider/authentication/price/receipt gates open,
   and all stages open with no final adversarial review claim.
 
