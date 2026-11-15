@@ -59,6 +59,13 @@ For the repository's runnable fixture comparison, use the commands and output de
 
 ## Status and coordination
 
-On 2026-11-15 the parent reported that Nasar described a local comparison attack and compliant case, 121 tests, and seven route checks in WhatsApp. This checkout's fetched `origin/nasar-frontend` pin is `14f9ec2` and contains no corresponding comparison delta; the reported changes remain **UNVERIFIED** until a pushed SHA is supplied and inspected.
+The Person 5 UI route now calls this runner with fixed task, discovery, fixture model, and local
+policy ports. Its allowlisted response preserves `simulation: true`, `executed: false`,
+`providerDispatch: false`, and `NOT_SETTLED`, and omits owner and model input/output data. Commit
+`c16e091` was reviewed locally: 133 root tests, root lint, web typecheck, production build, and an
+independent route review passed. The comparison still has no real Gateway or provider call.
 
-The parent also reported sending the verified group response at 14:52: PR #11's runner interface is approved for server-side fixture integration only. This is not merge approval, security clearance, or confirmation that Awais accepted the contract. Awais contract confirmation remains pending. The final `claude-opus-5-5` medium review is authorized once the specified work is ready; it has not been run.
+Om approved this runner interface for fixture integration only. That is not merge approval, final
+adversarial clearance, or confirmation that Awais accepted the shared contract. Awais's contract
+confirmation remains pending. The final `claude-opus-5-5` medium review is authorized once the
+specified work is ready; it has not been run.

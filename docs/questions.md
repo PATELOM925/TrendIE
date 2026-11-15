@@ -21,7 +21,7 @@ No Awais or Nassar agreement to proposed contracts is implied by visible source 
 
 ## Coordination follow-up (2026-11-15)
 
-Nasar reported in WhatsApp local comparison attack/compliant cases, 121 tests and seven route checks; fetched `origin/nasar-frontend` at `14f9ec2` contains no corresponding comparison delta, so this report remains **UNVERIFIED** pending a pushed SHA. PR #11's runner interface was approved for server-side fixture integration only, not merge or security clearance. Awais's contract confirmation is pending. Final `claude-opus-5-5` medium review is authorized once the specified work is ready and remains unrun. See [AAT UI fixture integration](aat-ui-integration.md).
+Person 5's controlled-comparison route is implemented in commit `c16e091` and uses PR #11's runner server-side with fixed fixture ports. The 133-test root suite, lint, web typecheck/build, and independent route review passed locally. This does not prove Gateway-backed enforcement, payment, or settlement. Om approved fixture integration only, not final adversarial clearance; Awais's contract confirmation is pending. Final `claude-opus-5-5` review remains authorized and unrun. See [AAT UI fixture integration](aat-ui-integration.md).
 
 The fake authority in `packages/integration.test.ts` exercises adapter boundaries with synthetic
 data only. The [dependency audit](dependencies.md) records current advisory counts and unresolved
