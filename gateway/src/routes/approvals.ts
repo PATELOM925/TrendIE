@@ -58,7 +58,8 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
             asset: row.bound_asset ?? row.intent_asset ?? row.intent_currency,
             scale: row.bound_scale !== null ? Number(row.bound_scale) : (row.intent_scale ?? 0),
           },
-          row.hmac_signature as string
+          row.hmac_signature as string,
+          row.key_id as string
         );
 
         if (!hmacOk) {
@@ -150,7 +151,8 @@ export const approvalRoutes: FastifyPluginAsync = async (fastify) => {
               asset: approval.bound_asset ?? undefined,
               scale: approval.bound_scale !== null ? Number(approval.bound_scale) : undefined,
             },
-            approval.hmac_signature as string
+            approval.hmac_signature as string,
+            approval.key_id as string
           );
           if (!hmacOk) {
             return { ok: false, reason: 'HMAC_INVALID' };

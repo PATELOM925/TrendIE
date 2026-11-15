@@ -17,11 +17,13 @@ const ResolveBodySchema = z
   .strict();
 
 export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
-  // POST /reviews/:decisionId/resolve (human approver / admin)
+  // POST /reviews/:decisionId/resolve (human approver / admin).
+  // The dashboard key registers intents, so it must not also approve reviews:
+  // one leaked key would otherwise both delegate and approve a purchase.
   fastify.post(
     '/reviews/:decisionId/resolve',
     {
-      preHandler: [requireRole('admin', 'dashboard')],
+      preHandler: [requireRole('approver', 'admin')],
     },
     async (req, reply) => {
       const { decisionId } = req.params as { decisionId: string };

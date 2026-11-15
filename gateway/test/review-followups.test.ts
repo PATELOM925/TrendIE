@@ -31,7 +31,7 @@ describe('adversarial review follow-ups (offline)', () => {
 
   it.each([
     { url: '/verify', key: config.API_KEY_AGENT, payload: { proposal } },
-    { url: '/reviews/test-decision/resolve', key: config.API_KEY_DASHBOARD, payload: { resolution: 'approve', notes: 'synthetic review' } },
+    { url: '/reviews/test-decision/resolve', key: config.API_KEY_ADMIN, payload: { resolution: 'approve', notes: 'synthetic review' } },
   ])('sanitizes unexpected database errors from $url', async ({ url, key, payload }) => {
     vi.spyOn(pool, 'connect').mockRejectedValue(Object.assign(new Error('value too long for type character varying(256)'), { code: '22001' }));
     const app = await buildServer();
