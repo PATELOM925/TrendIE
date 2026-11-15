@@ -2,14 +2,14 @@
 
 ## Person 5 gap closeout — 2026-11-14
 
-The latest Person 5 implementation work is on `nasar-frontend`, based on current `origin/develop`
-at `497db86`. It disables live Gemini calls pending numeric spend controls, labels the playground
-as synthetic, and corrects README, setup, and script descriptions so mocks and read-only probes are
-not presented as settlement. The console now accepts same-origin PDF uploads, applies bounded
-PyMuPDF text extraction, removes temporary source files, then scans and verifies the extracted text
-server-side against the selected owned authorization. The local intent form remains a six-decimal
-USDC/USDT demo; shared GOAT/Qatom contract alignment is still proposed and must be agreed with
-Person 1 and adapter owners.
+Person 5 implementation commits are included in `origin/develop` at `9133094` and in `main` at
+`0c08845` through PR #8. Current demo and feature statuses are reconciled in `gaps.md` and
+`feature_list.json`. The console disables live Gemini calls pending numeric spend controls, labels
+the playground as synthetic, and accepts same-origin PDF uploads with bounded PyMuPDF text
+extraction. It removes temporary source files, then scans and verifies extracted text server-side
+against the selected owned authorization. The local intent form remains a six-decimal USDC/USDT
+demo; shared GOAT/Qatom contract alignment is still proposed and must be agreed with Person 1 and
+adapter owners.
 
 The browser currently shows decisions in the current session and saved intent-created audit entries.
 The gateway does not provide owner-scoped proposal/decision/evidence history, payment outcomes, or a
@@ -23,13 +23,14 @@ scanner evidence through its normal verification endpoint, but the browser canno
 owner-scoped history, review queue controls, and provider outcome/receipt display remain blocked on
 the missing approved read APIs. Decision approval still does not execute payment.
 
-**Checks on Node 22.20.0:** root `npm test` passed 114 tests across 23 files; root typecheck,
-lint, and workspace production build passed; PDF Python extractor tests passed 4/4 using the
-installed `.venv-pdf`; gateway typecheck, lint, build, and offline unit tests passed (83 tests across
-8 files); `git diff --check` passed (Git reports only expected LF-to-CRLF checkout warnings). These
-checks use local code and fixtures. This closeout does not change gateway source.
-PostgreSQL integration tests and migrations were not run. No paid model calls, provider checkout,
-wallet transaction, chain write, or production write occurred.
+**Recorded pre-PR #8 checks on Node 22.20.0, at Person 5 commit `14f9ec2`:** root `npm test`
+passed 114 tests across 23 files; root typecheck, lint, and workspace production build passed; PDF
+Python extractor tests passed 4/4; gateway typecheck, lint, build, and offline unit tests passed
+(83 tests across 8 files). These counts do not verify the newer merged head `9133094` / `0c08845`.
+The repository records live PostgreSQL-backed PDF and replay demo runs on develop, but they were not
+rerun during this status update. No real provider checkout, testnet payment, or production write is
+evidenced. The latest local Docker Compose attempt failed with a read-only container-storage error;
+the reported Mac PostgreSQL instance still needs a dedicated database/schema and gateway connection.
 
 ## Nasar frontend update — 2026-11-14
 

@@ -54,14 +54,21 @@ export const auditRoutes: FastifyPluginAsync = async (fastify) => {
       const parsed = z.object({
         limit: z.coerce.number().int().min(1).max(100).default(20),
         offset: z.coerce.number().int().min(0).max(2147483647).default(0),
+        owner: z.string().min(1).max(128).optional(),
       }).strict().safeParse(req.query);
       if (!parsed.success) return reply.status(400).send({ error: 'SCHEMA_INVALID', message: 'Invalid pagination' });
-      const { limit, offset } = parsed.data;
+      const { limit, offset, owner } = parsed.data;
 
-      const res = await pool.query(
-        'SELECT * FROM intents ORDER BY created_at DESC LIMIT $1 OFFSET $2',
-        [limit, offset]
-      );
+      let query = 'SELECT * FROM intents';
+      const params: unknown[] = [];
+      if (owner) {
+        query += ' WHERE owner = $1';
+        params.push(owner);
+      }
+      query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+      params.push(limit, offset);
+
+      const res = await pool.query(query, params);
 
       const intents = res.rows.map((row) => ({
         id: row.id,
@@ -71,9 +78,15 @@ export const auditRoutes: FastifyPluginAsync = async (fastify) => {
         maxAmount: row.max_amount.toString(),
         currency: row.currency,
         allowedDestinations: row.allowed_destinations,
-        expiry: row.expiry.toISOString(),
+        expiry: row.expiry instanceof Date ? row.expiry.toISOString() : new Date(row.expiry).toISOString(),
         remainingUses: row.remaining_uses,
-        createdAt: row.created_at.toISOString(),
+        createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+        intentVersion: row.intent_version ?? 1,
+        platform: row.platform ?? null,
+        chain: row.chain ?? null,
+        asset: row.asset ?? null,
+        scale: row.scale ?? 0,
+        sender: row.sender ?? null,
       }));
 
       return reply.status(200).send({ intents, limit, offset, count: intents.length });
@@ -102,7 +115,7 @@ export const auditRoutes: FastifyPluginAsync = async (fastify) => {
         decision: row.decision,
         reasonCodes: row.reason_codes,
         authorizationRef: row.authorization_ref,
-        timestamp: row.created_at.toISOString(),
+        timestamp: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
       });
     }
   );

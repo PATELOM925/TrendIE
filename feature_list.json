@@ -7,7 +7,7 @@
     "blocked": "Progress depends on an unresolved owner, API, provider, or authorization gate.",
     "not_started": "No implementation work is recorded."
   },
-  "status_basis": "Statuses reviewed against source and documentation at the Person 5 work branch. No provider transaction or PostgreSQL integration evidence was produced by this review.",
+  "status_basis": "Statuses reconciled against PRD, Division, source and recorded evidence at origin/develop 9133094 (merged to main at 0c08845). The repository documents live Gateway/PostgreSQL runs for the PDF and replay demos, but those demos were not rerun during this reconciliation and no real provider checkout or payment is evidenced. F-005 remains partial because the vulnerable-agent path is narrated and the clean path consumes approval without dispatching a provider payment. F-006/F-007 remain blocked; F-009/F-010/F-013 retain their API, provider and integration gates.",
   "source_documents": [
     "PRD.md",
     "Division.md"

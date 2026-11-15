@@ -1,8 +1,8 @@
 # Integration and execution gaps
 
-**Reviewed against:** `PRD.md`, `Division.md`, `feature_list.json`, and the source at `497db86`  
-**Branch:** local `nasar-frontend`, fast-forwarded to `origin/develop`  
-**Review type:** source and documentation review. Tests, migrations, provider calls, and payments were not run for this review.
+**Reviewed against:** `PRD.md`, `Division.md`, `feature_list.json`, and `origin/develop` at `9133094` (merged to `main` at `0c08845`)
+**Branch:** `codex/p5-mvp-status`, based on latest `origin/develop`
+**Review type:** source and documentation review. The repository records live Gateway/PostgreSQL evidence for PDF and replay demos below; those demos were not rerun for this status reconciliation. No real provider checkout or payment was performed for this review.
 
 This file distinguishes implementation present in source from behavior demonstrated end to end. A route, adapter, fixture, or mock test is not evidence that the full protected purchase flow works against PostgreSQL and a provider.
 
@@ -10,13 +10,13 @@ This file distinguishes implementation present in source from behavior demonstra
 
 The repository contains substantial gateway, agent, inspection, adapter, dashboard, and demo code. It does **not yet demonstrate the PRD's complete purchase flow**: discover a real listing, inspect its content, produce a proposal, authorize it against a trusted intent, execute it through GOAT or Qatom, verify the provider result, persist the outcome, and display that evidence after reload.
 
-The most important blockers are:
+The remaining acceptance blockers are:
 
 1. The shared proposal, authorization, and execution contracts are not aligned across the frontend, gateway, and adapters.
 2. Qatom checkout is not implemented through the gateway; its HTTP authority remains fail-closed.
 3. GOAT has an active-mode HTTP client in source, but its binding and recovery behavior do not yet meet the server-owned durable authority contract, and no real transaction has been verified.
 4. The frontend does not execute payments or display persisted decision, inspection, and payment outcomes.
-5. PostgreSQL is provisionable from the repository, but was not running or verified in the reviewed environment; database-backed integration tests remain unrun.
+5. PostgreSQL-backed demo evidence is recorded for PDF and replay scenarios, but the isolated current-revision integration suite and safe audit-preserving reset remain incomplete. A team update reports PostgreSQL is running on a Mac and a dedicated TrendIE database/schema is still needed; that endpoint was not reachable from this Windows workspace. The local Docker Compose attempt here failed because Docker reported its storage filesystem as read-only. Docker is optional when the gateway can reach an existing PostgreSQL instance.
 6. Several demos use mocked authorities, signers, transactions, or manually constructed decisions while printing stronger success claims.
 
 ## Gap register
@@ -42,12 +42,13 @@ The most important blockers are:
 **Supporting owner:** Person 5 / Nasar (frontend-to-gateway integration and runbook)
 
 - The PRD specifies PostgreSQL. The repository now includes `gateway/docker-compose.yml` and root `db:up`, `db:down`, `db:migrate`, and `db:seed` scripts.
-- In the reviewed environment, Docker Desktop's engine was unavailable and no PostgreSQL Windows service was found. No local database was confirmed running.
-- No current-revision migrations, gateway endpoint integration tests, or frontend-to-database flow were run.
+- A team update reports PostgreSQL is already running on a Mac, but a dedicated TrendIE database, application schema, and matching gateway/frontend environment files remain to be configured.
+- From this Windows workspace, no PostgreSQL service was reachable. `npm run db:up` was attempted, but Docker failed to create the container with `read-only file system` while writing containerd snapshot metadata. Docker itself is not required when the gateway can reach an existing PostgreSQL server.
+- The repository records live PostgreSQL-backed PDF and replay demo runs on develop. A safe, isolated current-revision database test run and frontend-to-database acceptance flow still need to be repeated and recorded.
 - Gateway tests require an explicitly isolated PostgreSQL test database. Existing fixtures truncate the audit log, which conflicts with the audit protections; a safe reset strategy is still required before running the database suite.
-- `docs/team-setup-guide.md` now references the root `npm run db:migrate` script. PostgreSQL itself remains unverified here.
+- `docs/team-setup-guide.md` supports either the optional Compose database or an existing PostgreSQL host and references the root `npm run db:migrate` script. The reported Mac database is not yet configured/reachable from this gateway workspace.
 
-**Needed to close:** start a disposable local PostgreSQL instance; fix the fixture reset conflict; run migrations and seed only against that disposable instance; execute gateway and frontend endpoint tests and record the exact revision/results.
+**Needed to close:** provision a dedicated disposable TrendIE database on the available PostgreSQL host; ensure the gateway process can reach it (remember `localhost` is relative to the gateway host); configure matching local environment files; repair the audit-safe test reset; run migrations and seed only against that dedicated database; execute gateway and frontend endpoint tests and record the exact revision/results.
 
 ### G-03 — Gateway approval is not yet a complete shared adapter authority
 
@@ -96,17 +97,18 @@ The most important blockers are:
 ### G-06 — Agent attack demo is not yet equivalent to the PRD demonstration
 
 **Priority:** P0  
-**Status:** **Closed on `develop`**  
+**Status:** **Partially closed on `develop`**
 **Accountable owner:** Person 4 / Om & Tirth (agent and attack testing)  
 **Supporting owners:** Person 1 / Awais (gateway decision), Person 5 / Nasar (playground integration)
 
-- **Resolved:** `scripts/demo-attack.mjs` and the Web Console (`apps/web`) now execute a true paired vulnerability comparison using identical malicious invoice inputs:
-  1. **Path A (Vulnerable Agent Architecture):** Simulates standard agent setups where the agent has direct wallet/signing tool access. Prompt injection hijacks agent context and commands an unverified transfer $\rightarrow$ Funds are stolen and corporate treasury is drained.
-  2. **Path B (Protected Agent Architecture):** The agent operates in a dual-control sandbox with zero private keys. The identical proposal is submitted to the live Fastify Security Gateway (`POST /verify`). The Gateway halts execution deterministically (`REJECT [SELLER_MISMATCH, DESTINATION_NOT_ALLOWED, INJECTION_FLAGGED]`), logs the event into PostgreSQL, and denies execution tokens $\rightarrow$ Zero satoshis moved ($0.00 loss, zero gas wasted).
-  3. **Path C (Clean Authorized Purchase):** Legitimate invoice matching intent is approved by the live Gateway, issues a cryptographic HMAC approval token, and is consumed via `POST /approvals/:id/consume`.
-  4. **Live Web Console UI:** Rejections in the web dashboard now display a paired side-by-side comparison card illustrating the exact vulnerability vs. guard outcome. Testable via `npm run demo:attack`.
+- `scripts/demo-attack.mjs` submits the protected malicious proposal to the live gateway and verifies its rejection. The console now has a paired comparison display.
+- The vulnerable path currently prints a hard-coded rogue `wallet.sendTransaction` and an asserted stolen-payment outcome; it does not run an unprotected agent or execute a transfer. The clean path consumes a gateway approval, but does not dispatch a provider payment. The script header and final summary still describe these as executed/settled, which overstates the evidence.
+- The Web Console comparison card also says “Funds Stolen!” for the hypothetical vulnerable path, although it performs no wallet action; label this outcome as simulated/hypothetical.
+- This provides paired gateway-policy evidence, but does not yet demonstrate a successful attack against a controlled unprotected agent or a legitimate provider payment. No funds should be described as stolen or settled by this fixture.
 
-### G-07 — PDF extraction is not in the purchase workflow
+**Needed to close:** run the same malicious content through a controlled vulnerable agent and capture its changed proposal/action in a safe test harness; run the protected proposal through the live gateway and retain decision/audit evidence; label simulated actions accurately. A separate provider-backed legitimate payment is required for F-005/F-013 acceptance.
+
+### G-07 — PDF extraction and verification evidence
 
 **Priority:** P0  
 **Status:** **Closed on `develop`**  
@@ -139,7 +141,7 @@ The most important blockers are:
 ### G-09 — Demo scripts and docs overstate some evidence
 
 **Priority:** P1 for demo readiness and accurate acceptance reporting  
-**Status:** **Partially closed on `develop` (Replay demo verified end-to-end; GOAT transaction remains explicitly labeled as simulated/read-only)**  
+**Status:** **Partially closed on `develop` (gateway replay controls have live PostgreSQL demo evidence; no provider settlement is verified)**
 **Accountable owner:** Person 5 / Nasar (integrated demo and documentation)  
 **Supporting owners by evidence:** Person 1 / Awais (replay and audit demos), Person 2 / GOAT (`demo:goat`), Person 4 / Om & Tirth (agent and PDF demos)
 
@@ -150,6 +152,9 @@ The most important blockers are:
   4. Expired timestamps are rejected with `REJECT [INTENT_EXPIRED]`. Testable via `npm run demo:replay`.
 - The PDF demo (`demo:pdf`) now runs directly against the live Gateway API and PostgreSQL audit log.
 - `scripts/demo-goat-live.mjs` and `scripts/demo-attack.mjs` have been clarified to distinguish live read-only RPC checks from simulated settlement where live spend keys are restricted.
+- `demo-replay` provides live Gateway/PostgreSQL evidence for single-use approval consumption, duplicate-consume rejection, intent exhaustion, and expiry. This tests the gateway capability boundary; it does not dispatch a provider transaction or prove duplicate payment side effects are impossible.
+- `demo-attack.mjs` still labels its printed vulnerable `sendTransaction` and approval-consume-only clean path as on-chain execution/settlement. Those claims need to be corrected by the demo owner; approval consumption alone is not a provider payment.
+- The PDF demo's `SOC-2 ready` label is also unsupported by the audit-chain check and should be removed or precisely qualified.
 
 ### G-10 — Feature status and project documentation need reconciliation
 
@@ -158,11 +163,11 @@ The most important blockers are:
 **Supporting owners:** each feature owner validates the evidence for their feature; Om owns the main-branch release gate
 
 - **Historical finding from the initial gap review:** `feature_list.json` marked F-001–F-010 and F-013 `implemented`, despite the acceptance gaps in this document; F-011 and F-012 were `not_started`. The current status legend and evidence-based rows are documented in the progress note below.
-- `CONTEXT.md` and parts of `docs/team-handoff.md` still describe the frontend as unmerged or ask for a PR into develop, even though the frontend commits are ancestors of the current develop head.
+- **Resolved in this reconciliation:** `CONTEXT.md`, `docs/plan.md`, and the current handoff now record `origin/develop` at `9133094` and `main` at `0c08845` after PR #8.
 - `docs/integration.md` retains earlier pinned-source language and should be refreshed to distinguish newly added active-mode GOAT HTTP code from verified trusted gateway integration.
-- The root README's test count and current demo claims have not been verified on `497db86`.
+- **Resolved in this reconciliation:** the root README's demo instructions now reflect live Gateway/PostgreSQL use for PDF and replay, and state that no provider payment is performed.
 
-**Progress:** `feature_list.json` now defines `verified`, `partial`, `blocked`, and `not_started` and no longer marks incomplete P0/P1 features as implemented. See status notes for remaining component-owner validation.
+**Progress:** `feature_list.json` defines `verified`, `partial`, `blocked`, and `not_started`; statuses remain evidence-based and F-005 remains partial. G-06 has been changed from closed to partially closed because the vulnerable-agent and clean-provider-payment paths are narrated/approval-only. See status notes for remaining component-owner validation.
 
 **Needed to close:** feature owners validate their rows against current evidence; update branch/merge facts after integration; preserve explicit limits of source tests, mocked demos, database tests, and provider evidence.
 

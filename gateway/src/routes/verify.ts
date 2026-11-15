@@ -59,9 +59,15 @@ export const verifyRoutes: FastifyPluginAsync = async (fastify) => {
             maxAmount: row.max_amount.toString(),
             currency: row.currency,
             allowedDestinations: row.allowed_destinations,
-            expiry: row.expiry.toISOString(),
+            expiry: row.expiry instanceof Date ? row.expiry.toISOString() : new Date(row.expiry).toISOString(),
             remainingUses: row.remaining_uses,
-            createdAt: row.created_at.toISOString(),
+            createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+            intentVersion: row.intent_version ?? 1,
+            platform: row.platform ?? undefined,
+            chain: row.chain ?? undefined,
+            asset: row.asset ?? undefined,
+            scale: row.scale ?? undefined,
+            sender: row.sender ?? undefined,
           };
         }
 
@@ -128,18 +134,34 @@ export const verifyRoutes: FastifyPluginAsync = async (fastify) => {
           const approvalId = createApprovalId();
           const executionId = createExecutionId();
           const expiresAt = capApprovalExpiry(now, config.APPROVAL_TTL_SECONDS, intent.expiry);
+          const boundPlatform = intent.platform ?? proposal.platform ?? null;
+          const boundAsset = intent.asset ?? proposal.asset ?? intent.currency;
+          const boundChain = intent.chain ?? proposal.chain ?? null;
+          const boundScale = intent.scale ?? proposal.money?.scale ?? 0;
+          const boundSender = intent.sender ?? null;
+          const boundDestination = proposal.destination;
+          const spendCeiling = intent.maxAmount;
+
           const hmac = generateHmacSignature({
             approvalId,
             executionId,
             proposalHash: pHash,
             intentId: intent.id,
             expiresAt,
+            ownerId: intent.owner,
+            intentVersion: intent.intentVersion ?? 1,
+            platform: boundPlatform ?? undefined,
+            chain: boundChain ?? undefined,
+            asset: boundAsset,
+            scale: boundScale,
           });
 
           await client.query(
             `INSERT INTO approvals (
-              id, decision_id, intent_id, proposal_hash, execution_id, hmac_signature, key_id, expires_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              id, decision_id, intent_id, proposal_hash, execution_id, hmac_signature, key_id, expires_at,
+              owner_id, intent_version, bound_platform, bound_asset, bound_chain, bound_scale,
+              bound_sender, bound_destination, spend_ceiling
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
             [
               approvalId,
               decisionId,
@@ -149,6 +171,15 @@ export const verifyRoutes: FastifyPluginAsync = async (fastify) => {
               hmac,
               config.APPROVAL_KEY_ID,
               expiresAt,
+              intent.owner,
+              intent.intentVersion ?? 1,
+              boundPlatform,
+              boundAsset,
+              boundChain,
+              boundScale,
+              boundSender,
+              boundDestination,
+              spendCeiling,
             ]
           );
 

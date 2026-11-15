@@ -5,12 +5,12 @@ This plan preserves the original six stages and five role scopes from [Division.
 ## Pre-stage — Planning and docs foundation
 
 The owner-approved 2026-11-14 workflow uses `develop` as the integration and preview branch and
-reserves `main` for production. The current reviewed branch base is `origin/develop` at `497db86`;
-Nasar's frontend commits are included there through the later integration history. Earlier exact-head
-review cleared source `9ffdba5` for local/test integration and held live/production; it is not a
-verdict on `497db86`. New contributor work targets develop through focused PRs. This does not
-complete contract alignment, live provider evidence, or a project stage. Release from develop to
-main remains a separate owner gate. See [team handoff](team-handoff.md).
+reserves `main` for production. The latest reviewed `origin/develop` is `9133094`; Person 5's work
+is included there, and `main` contains it through PR #8 at `0c08845`. Earlier exact-head review
+cleared source `9ffdba5` for local/test integration and held live/production; it is not a verdict on
+these later heads. New contributor work targets develop through focused PRs. This does not complete
+contract alignment, live provider evidence, or a project stage. Release from develop to main remains
+a separate owner gate. See [team handoff](team-handoff.md).
 
 ## PRD product expectations and acceptance map
 

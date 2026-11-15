@@ -1,21 +1,22 @@
 # Current context
 
-**Checked:** 2026-11-14. Om PRs #1, #2 and #3 are merged into `develop`. Combined gateway
+**Checked:** 2026-11-15. Om PRs #1, #2 and #3 are merged into `develop`. Combined gateway
 [PR #4](https://github.com/PATELOM925/TrendIE/pull/4) is also merged at
 `56926a28833067cb1d20c2ce174bcfad44de0232`, containing reviewed runtime/documentation source
 `9ffdba59b94d6991c7286686e822c6731d5f09ea` and Awais's published work through
 `11a66a17d9aa454eb4430bfe844c03798b0254d5`. The final Opus verdict on `9ffdba5` was **SHIP for
-local/test integration**, with no P0–P2 local merge blocker, and **HOLD for live/production**.
-`main` remains unchanged. Later teammate commits require their own PR/review; no branch was reset
-or force-pushed. See [team handoff](docs/team-handoff.md).
+local/test integration**, with no P0–P2 local merge blocker, and **HOLD for live/production**. That
+verdict does not cover later heads. PR #8 merged `develop` into `main` at `0c08845`; its parent
+`9133094` includes the Person 5 frontend, PDF, and current gap-status changes. No production deploy
+or provider payment is evidenced. See [team handoff](docs/team-handoff.md).
 
 The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
 The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
-integration. No Tirth branch was visible at the latest remote inspection. Nassar's local frontend
-implementation was included in `develop` at `497db86`; the current `nasar-frontend` branch adds
-Person 5 implementation and ownership/acceptance updates above that base. Current Person 5 work is
-recorded below and does not imply project-stage acceptance.
+integration. No Tirth branch was visible at the latest remote inspection. Nassar's frontend commits
+are included in `develop` at `9133094` and `main` at `0c08845`. Current Person 5 work is recorded
+below and does not imply project-stage acceptance. The `codex/p5-mvp-status` documentation update
+is based on latest `origin/develop`.
 
 The authorized workflow is contributor PRs into `develop` for combined checks and previews, then
 an independently approved production PR to `main`. The owner has authorized this agent to merge
@@ -36,7 +37,7 @@ and a review queue because the gateway does not expose the required owner-scoped
 
 | Slice | Evidence at pinned head | Still needed |
 |---|---|---|
-| Person 1 / Awais gateway | Merged Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes and offline checks. Final local source passed 73 gateway tests; real SQL behavior remains unverified. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
+| Person 1 / Awais gateway | Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes, **shared binding retrieval (`GET /approvals/:id`), owner-scoped history/review queues (`/history/decisions`, `/history/executions`, `/history/review-queue`), GOAT Authority V1 endpoints, and migration 003**. 96 gateway unit tests pass; all lint/typecheck clean. | Combined Postgres-backed tests against real local PostgreSQL instance and live provider payment verification. |
 | Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
 | Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
 | Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
