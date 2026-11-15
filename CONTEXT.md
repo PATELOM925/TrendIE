@@ -1,19 +1,15 @@
 # Current context
 
-**Checked:** 2026-11-14. Om PRs #1, #2 and #3 are merged into `develop`. Combined gateway
-[PR #4](https://github.com/PATELOM925/TrendIE/pull/4) is also merged at
-`56926a28833067cb1d20c2ce174bcfad44de0232`, containing reviewed runtime/documentation source
-`9ffdba59b94d6991c7286686e822c6731d5f09ea` and Awais's published work through
-`11a66a17d9aa454eb4430bfe844c03798b0254d5`. The final Opus verdict on `9ffdba5` was **SHIP for
-local/test integration**, with no P0–P2 local merge blocker, and **HOLD for live/production**.
-`main` remains unchanged. Later teammate commits require their own PR/review; no branch was reset
-or force-pushed. See [team handoff](docs/team-handoff.md).
+**Checked:** 2026-11-15. `develop` is at `9133094` (fetched and confirmed). This includes Tirth's
+attack-comparison commit (`6c272f6`), Nassar's transient PDF upload work, replay/expiry live-Gateway
+demo, and documentation reconciliation. `main` is at `0c08845`, which carries the same application
+code as an earlier develop snapshot through PR #8. Om PRs #1–#3 and combined gateway PR #4 remain
+the reviewed base. The agent team confirms **114 root tests and 83 gateway unit tests pass** on
+Node 22.23.4 (`fnm exec --using 22.23.4`), along with root/gateway typecheck and lint. These do not
+establish PostgreSQL integration, provider settlement or complete end-to-end acceptance.
 
-The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
+The earlier reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
-The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
-integration. No Tirth branch was visible at the latest remote inspection. Nassar's local frontend
-implementation is on `nasar-frontend` and has not been merged or independently accepted.
 
 The authorized workflow is contributor PRs into `develop` for combined checks and previews, then
 an independently approved production PR to `main`. The owner has authorized this agent to merge
@@ -22,13 +18,17 @@ write production under this authorization. See [the plan](docs/plan.md).
 
 ## Implementation and integration evidence
 
-| Slice | Evidence at pinned head | Still needed |
+> **Gap register:** `gaps.md` at `9133094` is the authoritative per-gap status. G-06 (attack
+> comparison), G-07 (PDF-to-audit), and G-09 (replay demo) are marked closed or partially closed on
+> `develop`. G-01, G-02, G-03, G-04, G-05, G-08, and G-10 remain open.
+
+| Slice | Evidence at `9133094` | Still needed |
 |---|---|---|
-| Person 1 / Awais gateway | Merged Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes and offline checks. Final local source passed 73 gateway tests; real SQL behavior remains unverified. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
-| Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
-| Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
-| Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
-| Person 5 / Nassar | Local Next.js Guard Console and server-side gateway routes are implemented on `nasar-frontend`; synthetic proposal decisions use the local gateway, and the existing text scanner is called server-side. | Persisted proposal/evidence audit reconstruction, PDF upload/extraction UI, receipt integration, owner authentication, and end-to-end database verification remain open. |
+| Person 1 / Awais gateway | Gateway source (policy, verify/consume, outcomes, audit/review routes) in develop. 83 offline gateway unit tests pass on Node 22.23.4; replay/expiry demo runs against live Gateway API and PostgreSQL audit log. Real SQL durability, concurrency, and combined endpoint tests remain unrun. | **Shared binding contract** (owner identity, intent version, platform, chain, exact integer amount/asset/scale); owner-scoped history and review-list APIs; durable adapter checkpoint/recovery endpoints; safe migration and isolated DB test reset. |
+| Person 2 / GOAT, Om | Active HTTP authority client in source; `demo-goat-live.mjs` explicitly labels transaction as simulated/read-only; signed/broadcast checkpoints are proposed but not verified against gateway. | Adapters must receive the **persisted gateway binding** rather than constructing authority locally. Isolated test wallet, explicit numeric testnet spend ceiling, one bounded Testnet3 transaction, and verified receipt. |
+| Person 3 / Qatom/QPE, Om | Read-only MCP client; paid checkout disabled by default; replay/duplicate/expiry fixture suite covers contract behavior. | Authenticated tool/schema evidence, exact atomic price binding (Q004 P0 open), gateway-authorized checkout and verified receipt. Qatom checkout blocked until P0 is resolved. |
+| Person 4 / AAT, Om + Tirth | Paired attack comparison demo implemented (`G-06` closed on develop): Path A (vulnerable) vs Path B (protected gateway). PDF demo runs against live Gateway API. | Reproducible execution evidence linking malicious input → attack blocked → same input → protected flow. Findings must link to exact proposal and gateway decision record. Demo wording: consuming an approval is not payment settlement. |
+| Person 5 / Nassar | Transient PDF upload/inspection UI implemented; session-scoped decisions, scanner evidence, and audit entries displayed; labels correctly state history is session-only. | **Reloadable owner-scoped history** (blocked on G-08/Person 1 APIs), real payment statuses/receipts, human-review controls, platform-specific money handling, pagination, backend-connected browser tests. |
 
 The [integration matrix](docs/integration.md) separates the original reviewed defects from current
 mitigations. Both legacy adapter HTTP authorities now deny claims and refuse writes before network
@@ -65,42 +65,44 @@ remains zero by default (Q003).
 
 ## Current local checks
 
-On the current `nasar-frontend` working tree, the Next.js web workspace and server-side BFF passed
-`npm run web:build`, `npm run typecheck`, `npm run lint`, and `npm test` (79 tests) on Node 22.20.0.
-The independent frontend review found no remaining blockers for this local slice. These checks use
-local source and mocked HTTP responses; no gateway database, migration, provider, payment adapter,
-wallet, or chain was exercised. `npm ci --ignore-scripts` reported two high-severity dependency
-findings; see the dependency audit before any external use. The frontend has not been run against a
-configured gateway/PostgreSQL instance or visually reviewed in a browser.
+Agent team reports on `9133094` with verified Node **22.23.4** (`fnm exec --using 22.23.4`):
+**114 root tests** and **83 gateway unit tests** pass, along with root/gateway typecheck and lint.
+These do not establish PostgreSQL integration, provider settlement, or complete end-to-end acceptance.
 
-The earlier combined runtime source at `6ba9fcc4334f2eea5eeb0209311e6d8f9fb5ee99` passed root
-typecheck, lint, build and 65 tests; separate gateway typecheck, lint, build and 60 offline tests;
-and four Python PDF tests using `.venv-pdf`. This source includes the Qatom/GOAT safety boundaries,
-policy/audit/expiry changes and outcome transaction regression coverage. Those checks used Node 25.8.1: the apparent node@22 Homebrew path pointed to Node 25.
-Actual Node 22.23.4 is available through fnm and is used for subsequent checks. Prior Node 22
-validation claims based solely on that path were incorrect. No database integration tests or migrations
-were run; database durability, concurrency and SQL source remain unverified in PostgreSQL.
+The replay/expiry demo (`npm run demo:replay`) now runs against the live Gateway API and PostgreSQL
+audit log. The PDF demo (`npm run demo:pdf`) also runs against the live Gateway and verifies the
+cryptographic audit chain. The GOAT live demo script explicitly labels any transaction as
+simulated/read-only. No funded provider calls, chain transactions, or external messages were used.
 
-Latest runtime source `a1aecbc5bad32601582bd6658a8231f6880af2e4` passed root typecheck/lint/build,
-69 root tests, separate gateway typecheck/lint/build and 73 offline gateway tests on verified
-Node **22.23.4**, invoked with `fnm exec --using 22.23.4`. This includes Awais's published HMAC
-verification and audit/list endpoints, sanitized errors, bounded schema fields, prototype-safe API
-keys and strict GOAT executable arguments. It does not add PostgreSQL integration evidence.
-
-The dependency audit retains the AgentKit/Zod high finding from the checked dependency baseline;
-see [dependency audit](docs/dependencies.md). No paid calls or chain transactions have been made.
+Earlier combined source at `a1aecbc5` passed root typecheck/lint/build, 69 root tests, gateway
+typecheck/lint/build, and 73 offline gateway tests on verified Node 22.23.4. The dependency audit
+retains the AgentKit/Zod high finding from the checked baseline; see
+[dependency audit](docs/dependencies.md). No paid calls or chain transactions have been made.
 
 ## Next owner actions
 
-1. Use reviewed develop as the integration base; continue the open acceptance work below through focused PRs.
-2. Align exact intent, approval, money/unit, execution, checkpoint, result, error and audit contracts
-   across Awais, QPE and GOAT; preserve `unknown` whenever dispatch may have succeeded.
-3. Keep later changes reviewed against current `develop`; run the
-   separate root and gateway checks in [testing setup](docs/testing-setup.md). Never migrate or use
-   production for these checks.
-4. Obtain authenticated Qatom capabilities and verify price binding/receipt; obtain numeric paid
-   authorization separately before any paid call. Configure an isolated GOAT test wallet and get a
-   separate explicit testnet spend ceiling before a transaction.
-5. Nassar completes the remaining frontend acceptance work. Rehearse only on an authorized test environment.
+1. **Shared contract (G-01, P0 — Awais + all adapters):** Agree and implement the complete
+   proposal → approval → execution → outcome/recovery contract, explicitly including authenticated
+   owner identity, intent version, platform, chain, and exact integer amount/asset/scale in the
+   shared binding. Adapters must receive the persisted gateway binding; they must not construct
+   authority locally.
+2. **Gateway persistence and PostgreSQL (G-02, P0 — Awais):** Provision a disposable local
+   PostgreSQL instance; fix the audit-log truncation reset conflict; run migrations and gateway
+   endpoint tests at current-revision; record exact results.
+3. **Adapter recovery (G-03, P0 — Awais + Om/Tirth):** Implement durable checkpoint and
+   owner-scoped recovery endpoints on the gateway. Prove adapters checkpoint before dispatch and
+   recover uncertain outcomes rather than dropping them.
+4. **Bounded real payment (G-05, P0 — Om/Tirth):** Configure an isolated GOAT test wallet,
+   obtain a separate explicit Testnet3 spend ceiling, run one bounded transaction, and verify the
+   receipt and persisted outcome.
+5. **Person 5 owner-scoped UI (G-08, P1 — Nassar, blocked on Awais APIs):** Once owner-scoped
+   history and review-list APIs exist, add reloadable persisted history, real payment receipt
+   display, human-review controls, and backend-connected browser tests.
+6. **Demo wording integrity (G-09, ongoing):** Printed/simulated outcomes must stay clearly
+   labelled. Consuming an approval is not payment settlement. GOAT live demo must continue to
+   label transactions as simulated until a real receipt is verified.
+7. Qatom authenticated checkout remains blocked on Q004 (atomic price binding). Do not enable
+   until a provider capability or separately reviewed mitigation is verified and a numeric paid
+   ceiling is separately authorized.
 
 Open decisions and blockers: [docs/questions.md](docs/questions.md).

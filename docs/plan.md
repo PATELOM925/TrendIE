@@ -42,16 +42,24 @@ develop to main remains a separate owner gate. See [team handoff](team-handoff.m
 | Person 1 / Awais | Issue transaction-bound approvals and own authorization. |
 | Person 2 / GOAT, opportunistic | Connect the GOAT adapter to the gateway using transaction-bound approvals. |
 | Person 3 / Qatom / QPE, Om | Connect the Qatom adapter to the gateway using transaction-bound approvals. |
-| Person 4 / AAT, Om | Implement injection inspection and PDF extraction. |
-| Person 5 / Nassar | Integrate decisions, receipts and audit views. **Local evidence:** decision/reason display, scanner evidence, session activity, and allowlisted intent-created audit entries are implemented. Provider receipt view and persisted proposal/evidence reconstruction remain open. |
+| Person 4 / AAT, Om | Implement injection inspection and PDF extraction. **Local evidence on `develop`:** paired attack comparison (G-06 closed) — Path A (vulnerable agent) vs Path B (protected gateway) — using the same malicious input, with live Gateway API execution. PDF demo runs against live PostgreSQL audit chain. | Reproducible execution evidence linking malicious input → blocked → same input → protected flow, with findings linked to the exact proposal and gateway decision record. Demo wording: consuming an approval is not payment settlement. |
+| Person 5 / Nassar | Integrate decisions, receipts and audit views. **Local evidence:** transient PDF upload/inspection UI implemented; session-scoped decisions, scanner evidence, and audit entries displayed; labels correctly state history is session-only (G-07 partially, G-09 partial). | Owner-scoped persisted history (blocked on Person 1 APIs, G-08); real payment statuses/receipts; human-review controls; backend-connected browser tests. |
 
-**Stage checkpoint:** Public-export local fixtures compose AAT proposal output with Qatom using explicitly fake authority, transport, atomic-bound capability and receipt. They test valid synthetic settlement projection, seller variation denied before transport and concurrent duplicate claimed once. A second fixture exercises GOAT signed-only hash recovery with a read-only fake RPC and no signer/broadcast. These are not Awais's gateway. GOAT exposes a proposed authority port with atomic claim, durable signed/broadcast checkpoint and authenticated read-only reconciliation lookup. Awais's gateway branch has not demonstrated either aligned adapter contract in a combined local run. Last GOAT live evidence is a read-only chain `48816` / block `18260370` probe only; no signer or transaction. Qatom live price binding and combined gateway integration remain unverified. Stage 3 remains pending.
+**Stage checkpoint:** G-06 (attack comparison) is closed on `develop`: Tirth's paired demo runs the
+same malicious input through a vulnerable path (funds stolen) and the protected gateway path (blocked
+with audit evidence). G-07 (PDF-to-audit) is closed: the PDF demo runs against the live Gateway API
+and PostgreSQL audit chain. G-09 (replay demo) is partially closed: replay/expiry is verified end-to-end;
+GOAT transaction remains explicitly labelled as simulated/read-only. G-08 (persisted UI history and human
+review) remains open pending Person 1 owner-scoped APIs. Person 5 UI correctly labels session-only
+state. Demo wording integrity: consuming an approval is not payment settlement — this must remain
+labelled clearly in all printed or simulated outcomes. Combined gateway/adapter integration, real GOAT
+receipt, and authenticated Qatom checkout remain outstanding. Stage 3 remains pending.
 
 ## Stage 4 — Security testing (pending)
 
 Compare protected and intentionally unprotected attack scenarios, then cover mismatches, expiry, replay, concurrent duplicates, checkout authorization, provider failure and uncertain outcomes. Show that unauthorized proposals are blocked and legitimate proposals remain possible. Exercise reconciliation, malicious seller/provider output and resource-limited PDF inspection. A local QPE suite now covers contract behavior and fake-backed adapter boundaries; broader Awais gateway, Qatom live capability, AAT and GOAT security tests remain pending through public interfaces.
 
-**Stage checkpoint:** Reproducible attack and failure evidence demonstrates protected/unprotected behavior and does not overstate simulated or unknown outcomes.
+**Stage checkpoint:** G-06 is closed: a reproducible protected/unprotected attack comparison uses the same malicious input with live Gateway execution evidence. Demo wording: consuming an approval is not payment settlement. Remaining open: GOAT receipt, authenticated Qatom checkout, combined gateway/adapter integration, and broader security regressions through public interfaces.
 
 ## Stage 5 — Finalization (pending)
 

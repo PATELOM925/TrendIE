@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Record `develop` at `9133094` (Node 22.23.4: 114 root tests, 83 gateway unit tests pass, plus
+  typecheck and lint). This includes Tirth's paired attack comparison (G-06 closed), Nassar's
+  transient PDF upload UI, replay/expiry live-Gateway-and-PostgreSQL demo (G-09 partial), PDF demo
+  against live Gateway API and audit chain (G-07 closed), and documentation reconciliation. G-01,
+  G-02, G-03, G-04, G-05, G-08, and G-10 remain open.
+- Update CONTEXT.md and docs/plan.md: reflect current develop head, accurate test counts,
+  gap register status, and prioritized next-owner actions. No PostgreSQL integration, provider
+  settlement, or complete end-to-end acceptance is established.
+
 - Merge reviewed Om PRs #1–#3 and combined gateway PR #4 into develop. Final source 9ffdba5 is
   cleared for local/test integration only; main and production remain unchanged. Add the final
   team handoff, preserve remaining stage gates and track non-blocking audit follow-ups.
