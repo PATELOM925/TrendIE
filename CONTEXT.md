@@ -8,17 +8,20 @@
 local/test integration**, with no P0–P2 local merge blocker, and **HOLD for live/production**. That
 verdict does not cover later heads. PR #8 merged `develop` into `main` at `0c08845`; its parent
 `9133094` includes the Person 5 frontend, PDF, and current gap-status changes. No production deploy
-or provider payment is evidenced. See [team handoff](docs/team-handoff.md).
+or provider payment is evidenced. `origin/develop` now includes the gap-doc consolidation at
+`dbfac42`; PRs #10 (`om/QPE`, draft), #11 (`om/AAT`, open), and #12 (`om/GOAT`, draft) target
+develop but remain unmerged. See [team handoff](docs/team-handoff.md).
 
 The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
 The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
-integration. PR #10 publishes the QPE change at `afc1258` with 26 Qatom tests, a read-only
-capability collector and proposed authority contract. PR #11 publishes the AAT harness at
-`08016e6` with 35 agent tests. PR #12 is a draft for GOAT at `bdcf505`, with the complete V1
-client and 32 GOAT tests. All three target `develop`; none is merged, and the proposed contracts
-remain unagreed. The current source snapshot has Tirth's `origin/tirth/security-integration` branch.
-Nassar's frontend commits are included in `develop` at `9133094` and `main` at `0c08845`. Current Person 5 work is recorded
+integration. PR #10 publishes the QPE change at `afc1258` with 26 Qatom tests and a read-only
+capability collector; PR #11 publishes the AAT harness at `165038c` with 35 agent tests; PR #12
+is a draft for GOAT at `bdcf505`, with the V1 client and 32 GOAT tests. All target `develop` and
+remain unmerged. Om approved Nasar's use of PR #11's runner interface for local fixture integration;
+that approval is not final adversarial clearance. Tirth's `origin/tirth/security-integration`
+branch is visible. Nasar's frontend commits are included in `develop` at `9133094` and `main` at
+`0c08845`. Current Person 5 work is recorded
 below and does not imply project-stage acceptance. The `codex/p5-mvp-status` documentation update
 is based on latest `origin/develop`.
 
@@ -31,27 +34,28 @@ write production under this authorization. See [the plan](docs/plan.md).
 
 ### Person 5 implementation update
 
-The local playground now rejects live Gemini requests before gateway access and the UI labels its
-playground as synthetic. Demo output and setup docs distinguish mock adapter results, local policy
-checks, read-only RPC probes, and actual provider evidence. The authorization form states its
-USDC/USDT six-decimal demo limit; shared platform contract alignment remains open because the
-contracts are still proposed. PDF upload/extraction status and current checks are recorded in the
-latest Person 5 handoff section. The console still lacks persisted decision/evidence/outcome history
-and a review queue because the gateway does not expose the required owner-scoped read APIs.
+The local playground rejects live Gemini requests before gateway access. The console now calls PR
+#11's `runControlledComparison` and `validateEvidence` on the server, using fixed task, discovery,
+fixture-model, and local-policy inputs. The route allows only attack/clean scenario selection and
+returns an allowlisted result with proposal-linked evidence. It preserves `simulation: true`,
+`executed: false`, `providerDispatch: false`, and `NOT_SETTLED`; it does not call the real Gateway,
+provider, wallet, or payment system. The misleading hard-coded funds-stolen/blocked comparison was
+removed. The authorization form remains limited to six-decimal USDC/USDT; shared platform contract
+alignment is still open. Persisted decision history, payment outcomes/receipts, and authenticated
+review controls still require owner-scoped Gateway APIs.
 
 | Slice | Evidence at pinned head | Still needed |
 |---|---|---|
 | Person 1 / Awais gateway | Merged Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes and offline checks. Final local source passed 73 gateway tests; real SQL behavior remains unverified. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
-| Person 2 / GOAT, Om | Draft PR #12 at `bdcf505` contains the complete V1 client and 32 GOAT tests. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. If the claim may have persisted but the client never received an `executionId`, recovery by owner-scoped approval reference is required; the server endpoint is not implemented. |
-| Person 3 / Qatom/QPE, Om | Published PR #10 at `afc1258` contains 26 Qatom tests, a read-only capability collector and proposed authority contract. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. The collector is available in source; no authenticated live capability evidence exists. |
-| Person 4 / AAT, Om | Published PR #11 at `08016e6` adds a controlled fixture harness: 35 agent tests across 6 files and 11 comparison cases. The clean and attack CLI runs both report `NOT_SETTLED`; the harness uses a synthetic policy, not the actual gateway. | CLI comparison is **NOT_SETTLED** for both clean and attack cases; no live LLM provider behavior is evidenced. Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons remain open. |
-| Person 5 / Nassar | Local Next.js Guard Console includes intent registration, synthetic proposal verification, live-model rejection, and transient bounded PDF extraction/verification. The UI uses only the local demo owner. | Owner-scoped persisted decision/evidence/outcome history, an authenticated review queue, provider receipts, shared cross-platform contract alignment, and end-to-end PostgreSQL verification remain open. |
+| Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
+| Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
+| Person 4 / AAT, Om/Tirth | PR #11's bounded comparison harness and proposal-linked evidence are merged into this branch for UI integration; both outcomes remain `NOT_SETTLED`. | Final adversarial review, actual Gateway-backed attack evidence, any separately authorized live-model study, and provider-backed legitimate purchase remain open. |
+| Person 5 / Nasar | Local Next.js Sentinel console includes intent registration, gateway verification, transient bounded PDF extraction, and a controlled-comparison UI wired to PR #11's server-side runner with a local policy port. | Owner-scoped persisted history, authenticated review controls, provider receipts, shared authority contract alignment, and integrated PostgreSQL verification remain open. |
 
-The [integration matrix](docs/integration.md) separates the original reviewed defects from current
-mitigations. PRs #10, #11 and #12 are published or drafted against `develop`, and none is merged.
-The newer `develop` source still contains an active legacy GOAT client; do not describe both bridges
-as currently fail-closed. Keep the active bridge disabled pending a complete trusted binding.
-Neither the in-review replacements nor the legacy path establish the missing shared authority API.
+The [integration matrix](docs/integration.md) separates reviewed defects from mitigations. PR #12
+proposes a disabled-by-default GOAT V1 client, but it is not merged; current `develop` still needs
+the owner-approved persisted authority and recovery endpoints. Do not infer server durability or
+safe payment execution from adapter fakes or draft-client tests.
 
 The candidate gateway now compares identity strings exactly, caps approval expiry by intent expiry,
 revalidates human review, serializes audit append ordering and creates intents transactionally with
