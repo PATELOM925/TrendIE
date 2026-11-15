@@ -9,7 +9,7 @@ It verifies proposed purchases against trusted user authorizations (Intents) wit
 
 - **Deterministic Verification**: Pure TypeScript verification function (`verifyPolicy`), no I/O, no floats, integer minor units as `bigint`.
 - **Atomic Single-Use Approvals**: Approvals are bound to canonical proposal hash (`proposalHash`) and unique `executionId`. Consumed atomically in a single PostgreSQL transaction (`SELECT ... FOR UPDATE` + atomic `UPDATE approvals`).
-- **Role-Based Authentication**: Strict API key authentication per role (`agent`, `adapter-goat`, `adapter-qatom`, `dashboard`, `admin`). Agents can never consume approvals or modify intents.
+- **Role-Based Authentication**: Strict API key authentication per role (`agent`, `adapter-goat`, `adapter-qatom`, `dashboard`, `approver`, `admin`). Agents can never consume approvals or modify intents.
 - **Tamper-Evident Audit Chain**: Append-only PostgreSQL audit log with `prev_hash` + `row_hash` (SHA-256 chain) protected by database triggers.
 
 ---
@@ -38,6 +38,9 @@ Key environment variables:
 - `API_KEY_ADAPTER_QATOM`: API key for Person 3 Qatom Adapter
 - `API_KEY_DASHBOARD`: API key for Person 5 UI / Buyer
 - `API_KEY_ADMIN`: API key for admin operations
+- `API_KEY_APPROVER` (optional): API key for the human review approver; without it only `admin` resolves reviews
+- `API_KEY_<ROLE>_PREVIOUS`, `APPROVAL_HMAC_PREVIOUS_KEYS`, `API_KEYS_REVOKED_SHA256`: rotation and revocation, see `docs/CONTRACTS.md` section 8
+- `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW_SECONDS`, `AUTH_FAILURE_MAX`: request throttling and invalid-key lockout
 
 ### 3. Database Migration & Seed
 ```bash
@@ -76,7 +79,7 @@ pnpm test
 ```bash
 curl -X POST http://localhost:3000/intents \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: dashboard-secret-key-012" \
+  -H "X-API-Key: $API_KEY_DASHBOARD" \
   -d '{
     "id": "int_demo_01",
     "owner": "user_enterprise_corp",
@@ -95,7 +98,7 @@ curl -X POST http://localhost:3000/intents \
 ```bash
 curl -X POST http://localhost:3000/verify \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: agent-secret-key-123" \
+  -H "X-API-Key: $API_KEY_AGENT" \
   -d '{
     "proposal": {
       "intentId": "int_demo_01",
@@ -124,7 +127,7 @@ Response on approval:
 ```bash
 curl -X POST http://localhost:3000/approvals/apr_.../consume \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: goat-adapter-secret-key-456" \
+  -H "X-API-Key: $API_KEY_ADAPTER_GOAT" \
   -d '{
     "intentId": "int_demo_01",
     "seller": "Supplier A",
@@ -146,7 +149,7 @@ Response:
 ```bash
 curl -X POST http://localhost:3000/executions/exe_.../result \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: goat-adapter-secret-key-456" \
+  -H "X-API-Key: $API_KEY_ADAPTER_GOAT" \
   -d '{
     "executionId": "exe_...",
     "status": "succeeded",
@@ -159,14 +162,14 @@ curl -X POST http://localhost:3000/executions/exe_.../result \
 ### 5. Inspect Audit Log (`dashboard` / `admin`)
 ```bash
 curl -X GET "http://localhost:3000/audit?intentId=int_demo_01" \
-  -H "X-API-Key: dashboard-secret-key-012"
+  -H "X-API-Key: $API_KEY_DASHBOARD"
 ```
 
-### 6. Human Review Resolution (`admin` / `dashboard`)
+### 6. Human Review Resolution (`approver` / `admin`)
 ```bash
 curl -X POST http://localhost:3000/reviews/dec_.../resolve \
   -H "Content-Type: application/json" \
-  -H "X-API-Key: admin-secret-key-999" \
+  -H "X-API-Key: $API_KEY_ADMIN" \
   -d '{
     "resolution": "approve",
     "notes": "Reviewed and approved manually by security officer"

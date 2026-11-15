@@ -108,13 +108,41 @@ Migration `002_execution_outcome_integrity.sql` is additive source and has not b
 | `POST /executions/:id/result` | `adapter-goat`, `adapter-qatom`, `admin` | `PaymentResult` | Records settlement outcome. Idempotent on `executionId` |
 | `GET /audit?intentId=` | `dashboard`, `admin` | — | Reads cryptographically chained audit log rows |
 | `GET /decisions/:id` | `dashboard`, `admin` | — | Reads decision details and reason codes |
-| `POST /reviews/:decisionId/resolve` | `dashboard`, `admin` | `{ resolution, notes }` | Human approver converts `review` -> `approve`/`reject`. Hard reject can never be overridden |
+| `POST /reviews/:decisionId/resolve` | `approver`, `admin` | `{ resolution, notes }` | Human approver converts `review` -> `approve`/`reject`. Hard reject can never be overridden |
 
 ## 7. Security Invariants
 - The executed payment must match the exact approved proposal. Neither agent nor adapter may change approved fields.
 - Approvals are single-use, short-TTL (e.g. 300s), and bound to `proposalHash` and `executionId`.
 - Audit log is strictly append-only with a SHA-256 hash chain; update and delete are forbidden.
 - No LLM in the authorization decision path.
+
+## 8. Credentials, rotation and throttling (2026-11-15)
+
+Source-only change covered by offline tests; not exercised against PostgreSQL or a deployment.
+
+- **Roles.** `approver` is a new role (`API_KEY_APPROVER`, optional). `POST /reviews/:decisionId/resolve`
+  accepts `approver` and `admin` only. **Breaking:** the `dashboard` key no longer resolves reviews,
+  because that key also registers intents and one leaked key could otherwise delegate and approve.
+- **Service keys.** Send as `X-API-Key` or `Authorization: Bearer`. The gateway keeps only SHA-256
+  fingerprints in memory. Each role accepts its current key plus any keys in `API_KEY_<ROLE>_PREVIOUS`.
+  A fingerprint listed in `API_KEYS_REVOKED_SHA256` is refused even if still configured. All key
+  values must be unique across roles and slots. Rotation and revocation take effect on restart.
+- **Approval signing keys.** Each approval stores its `key_id` and is verified with that key.
+  `APPROVAL_HMAC_PREVIOUS_KEYS` (`keyId:secret,...`) keeps retired keys for verification only; new
+  approvals always use `APPROVAL_KEY_ID`. An approval whose key id is no longer loaded fails with
+  `HMAC_INVALID`, so removing a key invalidates everything it signed.
+- **Production start-up.** With `NODE_ENV=production` the gateway refuses to start when any secret is
+  under 32 characters or a placeholder. In every environment a signing secret may not equal an API key.
+- **Throttling.** Per process and in memory. Each key (or client address when unauthenticated) may make
+  `RATE_LIMIT_MAX` requests per `RATE_LIMIT_WINDOW_SECONDS`. A client address that presents
+  `AUTH_FAILURE_MAX` invalid keys in a window is refused for the rest of it, valid keys included.
+  Both return `429 { "error": "RATE_LIMITED" }` with `Retry-After`. `/health` is exempt.
+- **Logs.** `Authorization`, `X-API-Key` and cookie headers are redacted. Invalid-key attempts are
+  logged as `AUTH_INVALID_KEY` without the presented value.
+
+Not covered: per-owner identity (role keys still do not identify a user), revocation without a
+restart, limits shared across gateway instances, and secret storage itself, which remains plain
+environment variables supplied by the operator.
 
 ## Local hardening and compatibility gate (2026-11-14)
 

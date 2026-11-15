@@ -53,6 +53,18 @@ export function verifyPolicy(
     isHardReject = true;
   }
 
+  // 3b. Intent version match (if both specify)
+  if (intent.intentVersion !== undefined && proposal.intentVersion !== undefined && intent.intentVersion !== proposal.intentVersion) {
+    reasonCodes.push('INTENT_VERSION_MISMATCH');
+    isHardReject = true;
+  }
+
+  // 3c. Platform match (if both specify)
+  if (intent.platform !== undefined && proposal.platform !== undefined && intent.platform !== proposal.platform) {
+    reasonCodes.push('PLATFORM_MISMATCH');
+    isHardReject = true;
+  }
+
   // 4. Seller match
   if (intent.seller !== proposal.seller) {
     reasonCodes.push('SELLER_MISMATCH');
