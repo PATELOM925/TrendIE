@@ -1,18 +1,5 @@
-import { createQatomClient } from './client.js';
+import { collectCapabilities } from './capabilities.js';
 
 const token = process.env.QATOM_MCP_TOKEN;
-let close: (() => Promise<void>) | undefined;
-try {
-  const client = await createQatomClient(token ? { token } : {});
-  close = () => client.close();
-  const tools = await client.listTools();
-  process.stdout.write(`${JSON.stringify({ authenticated: Boolean(process.env.QATOM_MCP_TOKEN), toolCount: tools.length, tools: tools.map(({ name }) => name) }, null, 2)}\n`);
-} catch (error) {
-  const status = error && typeof error === 'object'
-    ? ('status' in error && typeof error.status === 'number' ? error.status : 'code' in error && typeof error.code === 'number' ? error.code : undefined)
-    : undefined;
-  process.stderr.write(`${JSON.stringify({ authenticated: Boolean(process.env.QATOM_MCP_TOKEN), status: status ?? null, errorType: error instanceof Error ? error.name : 'UnknownError' })}\n`);
-  process.exitCode = 1;
-} finally {
-  await close?.().catch(() => undefined);
-}
+const evidence = await collectCapabilities(token ? { token } : {});
+process.stdout.write(`${JSON.stringify(evidence, null, 2)}\n`);
