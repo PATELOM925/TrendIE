@@ -9,8 +9,17 @@ not been verified. Paid execution remains disabled by default (zero) until Q003 
 ceiling and a separate authorization; this runbook never dispatches checkout.
 
 On 2026-11-14, an unauthenticated read-only MCP `initialize` request returned HTTP 401 with a
-Bearer challenge and protected-resource metadata URL. It disclosed no tools. This is the only live
-Qatom evidence recorded here.
+Bearer challenge and protected-resource metadata URL. It disclosed no tools.
+
+On 2026-11-15 at 09:25:16.299 UTC, ParentSol ran the actual read-only CLI from local candidate
+`53215e8` with Node 22.23.4 against `https://mcp.m.todaq.net/mcp`, using `npm run qatom:probe`.
+Sanitized output was `tokenPresent:false`, `accessVerified:false`, `status:401`,
+`authChallenge:true`, `toolInventory:unavailable`, `tools:[]`, and `checkout.toolPresent:false`.
+`atomicPriceCurrencyBinding` and `receiptGuarantee` were `unknown`. No `QATOM_MCP_TOKEN` was in
+the process environment; no credential file was read, no paid tool was called, and no checkout
+was attempted. This confirms the probe's observed unauthenticated response only. It does not
+establish that checkout is unsupported or define its authenticated schema, price binding, or
+receipt guarantee. The docs update does not change runtime behavior.
 
 ## Local checks
 
@@ -39,14 +48,16 @@ Q007 in [open questions](questions.md).
 
 ## Read-only tool inventory
 
-After building, `npm run qatom:probe` attempts `initialize` and `tools/list`. It prints only whether
-the token environment variable is present, tool count, and tool names; on failure it prints only
-sanitized error metadata. It does not print schemas, token values, provider response bodies or
-call tools. No checkout tool is invoked.
+After building, `npm run qatom:probe` attempts `initialize` and `tools/list`. It prints sanitized
+capability evidence, including token presence, access verification, status/auth-challenge state,
+tool-inventory availability, and tool names. It does not print schemas, token values, provider
+response bodies or call tools. No checkout tool is invoked. The 2026-11-15 result above is pinned
+to candidate `53215e8`; rerun the probe to establish evidence for a different candidate.
 
-If authentication is later provisioned by an approved secret manager, inject `QATOM_MCP_TOKEN`
-into the probe process environment. Do not place the token in this repository, command arguments,
-chat, terminal transcripts or logs. Current implementation supports a server-provided Bearer
+Secure token request/entry through an approved secret mechanism has not been received. If the user
+provides a token through that mechanism, inject `QATOM_MCP_TOKEN` into the probe process environment.
+Do not request or accept the token in chat, or place it in this repository, command arguments,
+terminal transcripts or logs. Current implementation supports a server-provided Bearer
 token only; OAuth login, token refresh, scopes and buyer authorization remain unverified. If
 interactive auth is required, stop and document the supported flow before proceeding. Never
 automate OTP or account login.
