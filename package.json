@@ -25,8 +25,14 @@
     "gateway:typecheck": "npm --prefix gateway run typecheck",
     "gateway:lint": "npm --prefix gateway run lint",
     "gateway:build": "npm --prefix gateway run build",
+    "gateway:dev": "npm --prefix gateway run dev",
     "gateway:test:unit": "npm --prefix gateway run test:unit",
     "test:pdf": "python3 -m unittest discover -s services/pdf-inspection",
+    "demo:attack": "node scripts/demo-attack.mjs",
+    "demo:goat": "node scripts/demo-goat-live.mjs",
+    "demo:pdf": "node scripts/demo-pdf-attack.mjs",
+    "demo:replay": "node scripts/demo-replay-attack.mjs",
+    "demo:audit": "node scripts/demo-audit-integrity.mjs",
     "qatom:probe": "node packages/qatom/dist/cli.js"
   },
   "devDependencies": {
