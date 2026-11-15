@@ -1,5 +1,37 @@
 # Reviewed develop handoff
 
+## Person 5 gap closeout — 2026-11-14
+
+Person 5 implementation commits are included in `origin/develop` at `9133094` and in `main` at
+`0c08845` through PR #8. Current demo and feature statuses are reconciled in `gaps.md` and
+`feature_list.json`. The console disables live Gemini calls pending numeric spend controls, labels
+the playground as synthetic, and accepts same-origin PDF uploads with bounded PyMuPDF text
+extraction. It removes temporary source files, then scans and verifies extracted text server-side
+against the selected owned authorization. The local intent form remains a six-decimal USDC/USDT
+demo; shared GOAT/Qatom contract alignment is still proposed and must be agreed with Person 1 and
+adapter owners.
+
+The browser currently shows decisions in the current session and saved intent-created audit entries.
+The gateway does not provide owner-scoped proposal/decision/evidence history, payment outcomes, or a
+review queue. Its review-resolution POST is not sufficient to establish authenticated reviewer
+identity. These features remain blocked pending Person 1's APIs and provider owners' checked outcome
+facts. Feature statuses in `feature_list.json` use `partial` or `blocked` until acceptance evidence
+exists. See `gaps.md` for the owner-specific dependencies.
+
+PDF uploads retain no raw document or complete extracted text. The gateway persists decision and
+scanner evidence through its normal verification endpoint, but the browser cannot reload that data;
+owner-scoped history, review queue controls, and provider outcome/receipt display remain blocked on
+the missing approved read APIs. Decision approval still does not execute payment.
+
+**Recorded pre-PR #8 checks on Node 22.20.0, at Person 5 commit `14f9ec2`:** root `npm test`
+passed 114 tests across 23 files; root typecheck, lint, and workspace production build passed; PDF
+Python extractor tests passed 4/4; gateway typecheck, lint, build, and offline unit tests passed
+(83 tests across 8 files). These counts do not verify the newer merged head `9133094` / `0c08845`.
+The repository records live PostgreSQL-backed PDF and replay demo runs on develop, but they were not
+rerun during this status update. No real provider checkout, testnet payment, or production write is
+evidenced. The latest local Docker Compose attempt failed with a read-only container-storage error;
+the reported Mac PostgreSQL instance still needs a dedicated database/schema and gateway connection.
+
 ## Nasar frontend update — 2026-11-14
 
 Person 5's local frontend slice is implemented on `nasar-frontend` in commit `ee6ad25`
@@ -20,10 +52,12 @@ and `git diff --check` passed on Node 22.20.0. An independent read-only review f
 blockers for this local frontend scope. These checks use mocked HTTP responses. No PostgreSQL
 database, migration, provider, model call, wallet, chain transaction, or payment adapter was used.
 
-**Remaining Person 5 work:** PDF upload/extraction, persisted proposal and inspection evidence
-reconstruction, provider receipt/status integration, owner authentication, combined local
-PostgreSQL endpoint verification, and end-to-end demo evidence. Stages 1–3 remain open. The
-implementation has not been visually reviewed in a browser or run against a configured gateway.
+**Remaining Person 5 work at the time of this initial slice:** PDF upload/extraction, persisted
+proposal and inspection evidence reconstruction, provider receipt/status integration, owner
+authentication, combined local PostgreSQL endpoint verification, and end-to-end demo evidence.
+PDF upload/extraction is implemented in the later closeout section above. The history, receipt,
+authentication, database, and end-to-end gaps remain open. The implementation has not been visually
+reviewed in a browser or run against a configured gateway.
 
 Prepared and signed by **Nasar — Person 5, Frontend & System Integration**.
 
@@ -82,15 +116,14 @@ stretch, not a prerequisite for current integration.
 See [context](../CONTEXT.md), [questions](questions.md), [integration](integration.md),
 [plan](plan.md), and [unsent sponsor questions](sponsor-questions.md).
 
-## Copy-ready team message
+## Copy-ready team message (updated)
 
-The `nasar-frontend` branch now includes the local Person 5 Guard Console. It provides intent
-registration, synthetic proposal verification through the local gateway, server-side advisory text
-inspection, decision/reason display, and safe local audit activity. It does not execute payments.
-The implementation passed 79 root tests, lint, typecheck, web build, and independent source review.
-Please review the branch and use a focused PR into develop. Stages 1–3 remain open; PDF upload,
-persisted proposal evidence, receipts, owner authentication, and database-backed end-to-end checks
-are not included.
+The `nasar-frontend` branch includes the Person 5 Guard Console, intent registration, synthetic
+proposal verification, advisory text inspection, and transient bounded PDF upload/extraction through
+the same verification path. The live Gemini route is disabled. It does not execute payments or show
+persisted proposal/review/provider outcome history; those reads need an owner-scoped gateway API.
+Stages 1–3 remain open. The current focused test/build checks and remaining blockers are recorded in
+the latest closeout section above.
 
 The frontend checks passed locally on Node 22.20.0; the backend's earlier local/test checks are
 listed above. Use npm at the repository root and pnpm inside gateway/. Read CONTEXT.md,

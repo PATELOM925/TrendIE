@@ -1,7 +1,7 @@
 import 'server-only';
 
-type GatewayRole = 'dashboard' | 'agent';
-type GatewayPath = '/intents' | '/audit' | `/audit?intentId=${string}` | `/intents/${string}` | '/verify';
+type GatewayRole = 'dashboard' | 'agent' | 'admin';
+type GatewayPath = '/intents' | '/audit' | '/audit/chain/verify' | `/audit?intentId=${string}` | `/intents/${string}` | '/verify';
 
 const REQUEST_LIMIT_BYTES = 64 * 1024;
 const RESPONSE_LIMIT_BYTES = 1024 * 1024;
@@ -174,9 +174,11 @@ function getGatewayConfig(role: GatewayRole): { baseUrl: URL; apiKey: string } {
 
   const dashboardKey = process.env.API_KEY_DASHBOARD?.trim();
   const agentKey = process.env.API_KEY_AGENT?.trim();
+  const adminKey = process.env.API_KEY_ADMIN?.trim() || 'dev-admin-key-7890';
   if (!dashboardKey || !agentKey || dashboardKey === agentKey) {
     throw new GatewayConfigurationError('Set distinct local dashboard and agent gateway keys.');
   }
 
-  return { baseUrl, apiKey: role === 'dashboard' ? dashboardKey : agentKey };
+  const apiKey = role === 'dashboard' ? dashboardKey : role === 'admin' ? adminKey : agentKey;
+  return { baseUrl, apiKey };
 }

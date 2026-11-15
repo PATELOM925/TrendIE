@@ -4,14 +4,15 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "predev": "npm run build --workspace @trendie/inspection",
-    "prebuild": "npm run build --workspace @trendie/inspection",
-    "dev": "next dev --hostname 127.0.0.1 --port 3001",
-    "build": "next build",
+    "predev": "npm run build --workspace @trendie/inspection && npm run build --workspace @trendie/agent",
+    "prebuild": "npm run build --workspace @trendie/inspection && npm run build --workspace @trendie/agent",
+    "dev": "next dev --webpack --hostname 127.0.0.1 --port 3001",
+    "build": "next build --webpack",
     "start": "next start --hostname 127.0.0.1 --port 3001",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@trendie/agent": "0.1.0",
     "@trendie/inspection": "0.1.0",
     "next": "16.4.6",
     "react": "19.3.1",

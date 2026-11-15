@@ -76,3 +76,6 @@ export async function runPurchaseWorkflow(input: { task: TrustedTask; query: str
     throw new Error(error instanceof RangeError ? 'Workflow resource limit exceeded' : 'Workflow failed');
   } finally { clearTimeout(timeout); controller.signal.removeEventListener('abort', onAbort); }
 }
+
+export { createGeminiModel, type GeminiModelOptions } from './gemini.js';
+
