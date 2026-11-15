@@ -9,7 +9,8 @@ Follow this runbook to set up local PostgreSQL, the Fastify gateway, and the Nex
 Ensure you have installed:
 * **Node.js**: `>= 22` (`node --version`)
 * **pnpm**: `pnpm --version` (e.g. `pnpm@12.18.0` or `npm install -g pnpm`)
-* **Docker Desktop**: Running locally (for PostgreSQL)
+* **PostgreSQL 16**: A dedicated local/disposable database that the gateway process can reach
+* **Docker Desktop** (optional): Only needed when using the repository's PostgreSQL Compose service
 * **Python 3** with **PyMuPDF** for the console's bounded PDF text extraction
 
 Install the PDF dependency with `python -m pip install PyMuPDF` (Windows) or
@@ -37,7 +38,12 @@ cd gateway && pnpm install --frozen-lockfile --ignore-scripts && cd ..
 
 ## 3. Start PostgreSQL Database
 
-In `gateway/`, a Docker Compose file provisions a local PostgreSQL 16 container:
+If you already have PostgreSQL running, use a dedicated empty local database and set `DATABASE_URL`
+to that database in `gateway/.env`. The database host must be reachable from the gateway process;
+`127.0.0.1` refers to the machine running the gateway. Do not point the demo at a shared or
+production database.
+
+To provision PostgreSQL 16 with Docker instead, `gateway/` includes this Compose service:
 
 ```bash
 # Start Postgres in the background
