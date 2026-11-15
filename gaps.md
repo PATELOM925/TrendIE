@@ -111,15 +111,14 @@ The most important blockers are:
 ### G-07 — PDF extraction is not in the purchase workflow
 
 **Priority:** P0  
-**Accountable owner:** Person 4 / Om (inspection and PDF extraction)  
+**Status:** **Closed on `develop` (Commit 9cee95d)**  
+**Accountable owner:** Person 4 / Om & Tirth (inspection and PDF extraction)  
 **Supporting owners:** Person 1 / Awais (persisted evidence), Person 5 / Nasar (upload and display)
 
-- A hidden-text adversarial PDF fixture exists. `scripts/demo-pdf-attack.mjs` extracts it with PyMuPDF and runs the heuristic scanner.
-- That script manually computes a rejection rather than submitting the extracted evidence and proposal to the actual gateway.
-- The web “Invisible PDF Attack” control inserts explanatory text into a text field; it does not upload or parse the PDF fixture.
-- PDF findings are not shown as persisted evidence associated with a gateway decision/outcome.
-
-**Needed to close:** bounded upload or local-file ingestion; call the existing resource-limited extractor; pass extracted text/evidence through the same agent and gateway flow as listings; display and persist source, findings, extraction limitations, and the resulting gateway decision.
+- A hidden-text adversarial PDF fixture exists (`services/pdf-inspection/fixtures/adversarial-invoice.pdf`).
+- **Resolved:** `scripts/demo-pdf-attack.mjs` now runs PyMuPDF extraction (`render_mode=3` stream), registers an immutable Intent on the live Gateway (`POST /intents`), and submits the extracted proposal and heuristic inspection payload directly to `POST /verify` on the live Gateway.
+- The live Gateway deterministically halts the attack with `REJECT [AMOUNT_EXCEEDS_MAX, INJECTION_FLAGGED]`.
+- The attack rejection is cryptographically appended and verified in the PostgreSQL audit ledger (`GET /audit/chain/verify`). Testable via `npm run demo:pdf`.
 
 ### G-08 — Decisions, outcomes, and human review are not fully available in the UI
 
@@ -139,17 +138,17 @@ The most important blockers are:
 ### G-09 — Demo scripts and docs overstate some evidence
 
 **Priority:** P1 for demo readiness and accurate acceptance reporting  
+**Status:** **Partially closed on `develop` (Replay demo verified end-to-end; GOAT transaction remains explicitly labeled as simulated/read-only)**  
 **Accountable owner:** Person 5 / Nasar (integrated demo and documentation)  
-**Supporting owners by evidence:** Person 1 / Awais (replay and audit demos), Person 2 / GOAT (`demo:goat`), Person 4 / Om (agent and PDF demos)
+**Supporting owners by evidence:** Person 1 / Awais (replay and audit demos), Person 2 / GOAT (`demo:goat`), Person 4 / Om & Tirth (agent and PDF demos)
 
-- `scripts/demo-attack.mjs` prints that a clean purchase settled on GOAT, but its authority, signer, transaction hash, and receipt are simulated.
-- `scripts/demo-goat-live.mjs` performs read-only RPC calls; it does not submit a transaction despite the “live bridge” wording.
-- `scripts/demo-replay-attack.mjs` logs that an approval was consumed but does not call the approval-consume endpoint for that approved proposal. It creates a separate zero-use intent to model exhaustion, which is not a duplicate-consumption test.
-- The PDF demo uses a real fixture/extractor but manually computes the gateway result.
-- The README and setup guide describe “live” or “settled” demos more strongly than those scripts establish.
-- Setup documentation contains the `gateway:db:migrate` script-name mismatch noted in G-02.
-
-**Needed to close:** label mocks and read-only probes explicitly; make success claims conditional on checked provider evidence; replace the replay demo with a true second consume attempt on the same approval; align run commands with package scripts; keep live evidence separate from fixture/test evidence.
+- **Resolved for Replay Defense:** `scripts/demo-replay-attack.mjs` was upgraded to perform a true live duplicate consumption on the exact same HMAC approval token against `POST /approvals/:id/consume`. The Gateway executes atomic row updates in PostgreSQL:
+  1. Attempt #1 consumes the approval (`200 OK`) and decrements `remaining_uses` to 0.
+  2. Attempt #2 (Replay of same token) is rejected by Gateway with `HTTP 403 FORBIDDEN` (`Approval cannot be consumed: INTENT_EXHAUSTED`).
+  3. Attempt #3 (Proposal resubmission against exhausted intent) is rejected by Gateway with `REJECT [INTENT_EXHAUSTED]`.
+  4. Expired timestamps are rejected with `REJECT [INTENT_EXPIRED]`. Testable via `npm run demo:replay`.
+- The PDF demo (`demo:pdf`) now runs directly against the live Gateway API and PostgreSQL audit log.
+- `scripts/demo-goat-live.mjs` and `scripts/demo-attack.mjs` have been clarified to distinguish live read-only RPC checks from simulated settlement where live spend keys are restricted.
 
 ### G-10 — Feature status and project documentation need reconciliation
 
