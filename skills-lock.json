@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "skills": {
+    "qatom-seller-guide": {
+      "source": "StarwaterHeaven/qatom-seller-guide",
+      "sourceType": "github",
+      "skillPath": "skills/qatom-seller-guide/SKILL.md",
+      "computedHash": "d4f8e9bdc801ea6bf1afd63b6d2b2e901781253a6f63d21e245c0bf11cd741de"
+    }
+  }
+}
