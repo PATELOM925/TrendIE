@@ -64,7 +64,6 @@ export function GuardConsole() {
   const [customProduct, setCustomProduct] = useState('Product A (substituted listing)');
   const [customAmount, setCustomAmount] = useState('5000');
   const [customDestination, setCustomDestination] = useState('0xDeadDeadDeadDeadDeadDeadDeadDeadDeadDead');
-  const [useLiveModel, setUseLiveModel] = useState(true);
   const [playgroundError, setPlaygroundError] = useState('');
   const dialogRef = useRef<HTMLDialogElement>(null);
   const verificationRequestRef = useRef(0);
@@ -241,8 +240,8 @@ export function GuardConsole() {
       intent: selectedIntent,
       scenario: {
         key: 'injection',
-        label: useLiveModel ? 'Gemini 3.5 Flash · Live Attack' : 'Custom Playground Attack',
-        hint: 'Interactive Playground',
+        label: 'Synthetic Playground Attack',
+        hint: 'Local fixture',
       },
       proposal: {
         intentId: selectedIntent.id,
@@ -272,7 +271,7 @@ export function GuardConsole() {
           amount: customAmount,
           currency: selectedIntent.currency,
           destination: customDestination,
-          useLiveModel,
+          useLiveModel: false,
         }),
       });
 
@@ -288,13 +287,14 @@ export function GuardConsole() {
       if (!response.ok || !body.decision || !body.proposal) {
         throw new Error(body.error ?? 'Verification failed.');
       }
+      const decision = body.decision;
 
       const confirmed: Attempt = {
         intent: selectedIntent,
         scenario: {
           key: 'injection',
-          label: body.agentType === 'gemini-3.5-flash' ? 'Gemini 3.5 Flash · Autonomous Agent' : 'Custom Attack',
-          hint: 'Interactive Attack',
+          label: 'Synthetic Custom Proposal',
+          hint: 'No model call',
         },
         proposal: body.proposal,
         inspectionText: { source: 'custom-attack.txt', text: customPrompt },
@@ -305,12 +305,12 @@ export function GuardConsole() {
 
       setAttempt(confirmed);
       setSessionActivity((current) => [{
-        id: body.decision?.id ?? crypto.randomUUID(),
+        id: decision.id,
         kind: 'decision',
-        title: `${decisionLabel(body.decision?.decision ?? 'reject')} · ${useLiveModel ? 'Gemini 3.5 Flash' : 'Custom'} Attack`,
-        detail: (body.decision?.reasonCodes ?? []).map(reasonText).join(' '),
-        timestamp: body.decision?.timestamp ?? new Date().toISOString(),
-        decision: body.decision?.decision,
+        title: `${decisionLabel(decision.decision)} · Synthetic Playground`,
+        detail: decision.reasonCodes.map(reasonText).join(' '),
+        timestamp: decision.timestamp,
+        decision: decision.decision,
       }, ...current]);
     } catch (error) {
       if (requestNumber !== verificationRequestRef.current) return;
@@ -378,7 +378,7 @@ export function GuardConsole() {
                   className={`tab-btn${activeTab === 'playground' ? ' active' : ''}`}
                   onClick={() => setActiveTab('playground')}
                 >
-                  ⚡ Live Attack Playground (Gemini AI 🤖)
+                  Synthetic Playground
                 </button>
               </div>
 
@@ -402,10 +402,10 @@ export function GuardConsole() {
                     <div>
                       <h2 id="scenario-heading" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         Custom Adversarial Attack Studio
-                        <span className="gemini-pill">Gemini 3.5 Flash Powered</span>
+                        <span className="gemini-pill">Local fixture · no model call</span>
                       </h2>
                       <span className="strip-note">
-                        Type any prompt injection or unapproved seller listing below. Watch the agent evaluate it and the Payment Guard block unauthorized fund transfers!
+                        Enter synthetic adversarial text and a proposed purchase. The server scans the text and asks the gateway to decide; no model or payment adapter runs.
                       </span>
                     </div>
                   </div>
@@ -440,7 +440,7 @@ export function GuardConsole() {
                             setCustomProduct('Product A');
                           }}
                         >
-                          📄 Invisible PDF Attack
+                          📄 Synthetic PDF Text Fixture
                         </button>
                         <button
                           type="button"
@@ -511,10 +511,10 @@ export function GuardConsole() {
                     <label className="checkbox-row">
                       <input
                         type="checkbox"
-                        checked={useLiveModel}
-                        onChange={(e) => setUseLiveModel(e.target.checked)}
+                        checked={false}
+                        disabled
                       />
-                      <span>Run through live Gemini 3.5 Flash AI Agent (Evaluates listing autonomously)</span>
+                      <span>Live Gemini calls are disabled until a numeric spend limit is approved and enforced.</span>
                     </label>
 
                     <button
@@ -522,7 +522,7 @@ export function GuardConsole() {
                       className="attack-submit-btn"
                       disabled={attempt?.phase === 'checking' || loading}
                     >
-                      {attempt?.phase === 'checking' ? 'Agent thinking…' : '🔥 Fire Attack at Payment Guard'}
+                      {attempt?.phase === 'checking' ? 'Checking proposal…' : 'Submit synthetic proposal'}
                     </button>
                   </div>
 
@@ -677,14 +677,15 @@ function ActivityPanel({ activity, loading, auditError }: { activity: Array<Sess
           <span
             className="mode-pill"
             style={{ background: '#edf8f1', color: '#16784b', borderColor: '#c9e7d5', fontSize: '9px', padding: '3px 7px' }}
-            title="Every decision is cryptographically sealed in an append-only SHA-256 hash chain in PostgreSQL."
+            title="The gateway reports the audit hash chain is valid. This does not prove payment settlement or that every decision is available here."
           >
-            ✓ Ledger Valid ({chainStatus.totalEntries})
+            ✓ Audit chain valid ({chainStatus.totalEntries})
           </span>
         ) : (
           <span className="strip-note">Local session + safe audit</span>
         )}
       </div>
+      <p className="activity-detail">Gateway history currently contains saved authorization entries only. Decisions below are from this browser session; persisted proposal, inspection, review, and payment history needs owner-scoped gateway read APIs.</p>
       {auditError && <p className="activity-detail" role="status">Saved audit entries are unavailable. Current session activity is still shown.</p>}
       {loading && <p className="empty-state">Loading activity…</p>}
       {!loading && activity.length === 0 && <p className="empty-state">No activity yet. Register an authorization or run a proposal.</p>}
@@ -704,7 +705,7 @@ function IntentDialog({ ref, error, busy, onClose, onSubmit }: { ref: React.RefO
   const onCloseDialog = () => { if (!busy) onClose(); };
   return (
       <dialog ref={ref} className="intent-modal" onCancel={onCancel} onClose={onCloseDialog} aria-labelledby="intent-dialog-title">
-        <div className="modal-head"><div><div className="eyebrow">Trusted authorization</div><h2 id="intent-dialog-title">Set the purchase boundary</h2><p>Saved by the local gateway for this demo owner.</p></div><button className="modal-close" type="button" aria-label="Close dialog" disabled={busy} onClick={onClose}>×</button></div>
+        <div className="modal-head"><div><div className="eyebrow">Trusted authorization</div><h2 id="intent-dialog-title">Set the purchase boundary</h2><p>Saved by the local gateway for this demo owner. This demo form supports six-decimal USDC/USDT only; shared GOAT/Qatom contract and amount-scale alignment is still an owner gate.</p></div><button className="modal-close" type="button" aria-label="Close dialog" disabled={busy} onClick={onClose}>×</button></div>
         <form className="intent-form" onSubmit={onSubmit}>
           <fieldset className="form-grid intent-fields" disabled={busy}>
             <div className="form-field"><label htmlFor="seller">Authorized seller</label><input id="seller" name="seller" required maxLength={256} placeholder="Northstar Supply" /></div>
