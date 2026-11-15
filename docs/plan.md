@@ -58,9 +58,9 @@ role ownership follows [Division.md](../Division.md).
 | Person 2 / GOAT, opportunistic | Make a standalone GOAT Testnet3 payment and verify its receipt. |
 | Person 3 / Qatom / QPE, Om | Implement discovery and checkout subject to provider price-binding and spend gates. |
 | Person 4 / AAT, Om | Build the purchasing agent and structured proposal generation. |
-| Person 5 / Nassar | Connect intent and payment screens. **Local evidence:** intent registration/listing and synthetic proposal decisions use the local gateway; no payment executes from the UI. |
+| Person 5 / Nassar | Connect intent and payment screens. **Local evidence:** intent registration/listing, synthetic proposal decisions, and PDF upload/extraction-to-verification use the local gateway; raw uploaded PDFs are temporary. The UI does not execute payments. |
 
-**Stage checkpoint:** Local implementation evidence: AAT proposal workflow and PDF inspection use local fixtures; GOAT native transfer compiles and its fake wallet path is tested; Qatom read-only client supports discovery shape; the Person 5 console displays gateway decisions and server-generated text inspection evidence. The frontend still lacks PDF upload/extraction and persistent proposal/evidence reconstruction. Live evidence: no GOAT transaction, no authenticated Qatom discovery and no approved numeric ceiling (user only said “keep it low”). Stage 2 remains pending. Qatom checkout stays disabled pending exact price binding, receipt facts, gateway and paid authorization.
+**Stage checkpoint:** Local implementation evidence: AAT proposal workflow and PDF inspection use local fixtures; GOAT native transfer compiles and its fake wallet path is tested; Qatom read-only client supports discovery shape; the Person 5 console displays gateway decisions and server-generated text/PDF inspection evidence. PDF upload uses the existing bounded extractor and removes the temporary file after extraction. Persistent proposal/evidence reconstruction still depends on Person 1's owner-scoped history API. Live evidence: no GOAT transaction, no authenticated Qatom discovery and no approved numeric ceiling. Stage 2 remains pending. Qatom checkout stays disabled pending exact price binding, receipt facts, gateway and paid authorization.
 
 ## Stage 3 — Integration (pending)
 
@@ -70,9 +70,11 @@ role ownership follows [Division.md](../Division.md).
 | Person 2 / GOAT, opportunistic | Connect the GOAT adapter to the gateway using transaction-bound approvals. |
 | Person 3 / Qatom / QPE, Om | Connect the Qatom adapter to the gateway using transaction-bound approvals. |
 | Person 4 / AAT, Om | Implement injection inspection and PDF extraction. |
-| Person 5 / Nassar | Integrate decisions, receipts and audit views. **Local evidence:** decision/reason display, scanner evidence, session activity, and allowlisted intent-created audit entries are implemented. Provider receipt view and persisted proposal/evidence reconstruction remain open. |
+| Person 5 / Nassar | Integrate decisions, receipts and audit views. **Local evidence:** decision/reason display, scanner/PDF evidence, session activity, and allowlisted intent-created audit entries are implemented. Provider receipt view and persisted proposal/evidence reconstruction remain blocked on owner-scoped gateway reads. |
 
 **Stage checkpoint:** Public-export local fixtures compose AAT proposal output with Qatom using explicitly fake authority, transport, atomic-bound capability and receipt. They test valid synthetic settlement projection, seller variation denied before transport and concurrent duplicate claimed once. A second fixture exercises GOAT signed-only hash recovery with a read-only fake RPC and no signer/broadcast. These are not Awais's gateway. GOAT exposes a proposed authority port with atomic claim, durable signed/broadcast checkpoint and authenticated read-only reconciliation lookup. Awais's gateway branch has not demonstrated either aligned adapter contract in a combined local run. Last GOAT live evidence is a read-only chain `48816` / block `18260370` probe only; no signer or transaction. Qatom live price binding and combined gateway integration remain unverified. Stage 3 remains pending.
+
+**Person 5 integration gate:** The shared contracts remain proposed and unaccepted; the web form is a local six-decimal USDC/USDT demo and does not map platform-specific scales. The gateway exposes no owner-scoped decision/proposal/evidence history or review queue; its current audit query does not link verified decisions to intents. The existing review-resolution POST is not sufficient for an authenticated human-review UI. The console preserves these as blockers and does not expose a resolution control.
 
 ## Stage 4 — Security testing (pending)
 

@@ -15,8 +15,9 @@ const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 
 console.log(bold('\n============================================================='));
-console.log(bold('  STAGE 4 STEP 1: ADVERSARIAL PDF INVOICE ATTACK DEMO       '));
+console.log(bold('  LOCAL PDF EXTRACTION AND SCANNER FIXTURE                   '));
 console.log(bold('=============================================================\n'));
+console.log(yellow('Uses the checked-in PDF fixture and a local decision projection. It does not call the gateway or submit a payment.\n'));
 
 console.log(cyan('1. Inspecting Candidate PDF Document:'));
 console.log(`   File: ${fixturePath}`);
@@ -48,7 +49,7 @@ for (const finding of scanResult.findings) {
 console.log('');
 
 // 3. Simulate Gateway Defense
-console.log(cyan('4. Gateway Verification against Registered Intent:'));
+console.log(cyan('4. Illustrative policy projection (not a gateway response):'));
 const registeredIntent = {
   id: 'int_demo_01',
   seller: 'Supplier A',
@@ -67,7 +68,7 @@ const reasonCodes = [];
 if (amountExceeded) reasonCodes.push('AMOUNT_EXCEEDS_MAX');
 if (injectionDetected) reasonCodes.push('INJECTION_FLAGGED');
 
-console.log(`\n   Gateway Decision: ${red('REJECT (BLOCKED)')}`);
+console.log(`\n   Illustrative Result: ${red('REJECT')}`);
 console.log(`   Reason Codes:     ${red(reasonCodes.join(', '))}`);
-console.log(green('\n   ✓ Fund Drain Prevented: Transaction halted. Zero funds moved from wallet!'));
+console.log(green('\n   Fixture complete. This result does not establish a gateway decision or payment outcome.'));
 console.log(bold('\n=============================================================\n'));

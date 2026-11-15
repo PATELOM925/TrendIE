@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * Agentic Payment Guard — Track 3 Attack & Defense Live Demonstration
+ * Agentic Payment Guard — synthetic attack and adapter-boundary fixture
  *
  * This executable script demonstrates the core hackathon claim:
- * 1. An unprotected AI agent reads a poisoned invoice and gets hijacked by prompt injection.
- * 2. The Agentic Payment Guard Security Gateway intercepts the rogue proposal and rejects it deterministically.
- * 3. The GOAT Network payment adapter refuses execution — 0 satoshis transferred.
- * 4. A clean legitimate purchase passes all checks, consumes an HMAC approval, and settles on GOAT Testnet3.
+ * This script uses hardcoded proposals, fake gateway/authority responses, and a fake signer/receipt.
+ * It demonstrates local adapter behavior only. It does not call a live model, gateway, wallet, or chain.
  */
 
 import { inspectText } from '@trendie/inspection';
@@ -34,8 +32,8 @@ async function runDemo() {
   console.clear();
   console.log();
   console.log(bold(cyan('╔════════════════════════════════════════════════════════════════════════════╗')));
-  console.log(bold(cyan('║        AGENTIC PAYMENT GUARD — TRACK 3 ATTACK & DEFENSE DEMO               ║')));
-  console.log(bold(cyan('║   Zero-Trust Deterministic Security for Autonomous Agentic Payments        ║')));
+  console.log(bold(cyan('║       AGENTIC PAYMENT GUARD — SYNTHETIC ATTACK FIXTURE                     ║')));
+  console.log(bold(cyan('║   Mock gateway and signer; no live model or payment is used                ║')));
   console.log(bold(cyan('╚════════════════════════════════════════════════════════════════════════════╝')));
   console.log();
 
@@ -57,18 +55,18 @@ async function runDemo() {
   };
 
   console.log(`   • Intent ID:            ${cyan(trustedIntent.id)}`);
-  console.log(`   • Authenticated Owner:  ${trustedIntent.owner}`);
+  console.log(`   • Synthetic Owner ID:   ${trustedIntent.owner}`);
   console.log(`   • Authorized Vendor:    ${green(trustedIntent.seller)}`);
   console.log(`   • Authorized Product:   ${trustedIntent.product}`);
   console.log(`   • Allowed Destination:  ${green(trustedIntent.allowedDestinations[0])}`);
   console.log(`   • Max Spend Ceiling:    0.02 BTC (${trustedIntent.maxAmount} wei)`);
-  console.log(`   • Settlement Rail:      ${bold('GOAT Network Testnet3 (Chain ID 48816)')}`);
+  console.log(`   • Fixture Target:        ${bold('GOAT-shaped adapter input; no network payment')}`);
   console.log();
 
   // ──────────────────────────────────────────────────────────────────────────
   // STEP 2: INGESTING MALICIOUS CONTENT (THE ATTACK)
   // ──────────────────────────────────────────────────────────────────────────
-  console.log(bold('🚨 STEP 2: Adversarial Attack via Prompt Injection (Invoice Redirection)'));
+  console.log(bold('🚨 STEP 2: Synthetic adversarial listing fixture (not a model run)'));
   hr();
   const poisonedListing = {
     itemId: 'cloud-gpu-h100-monthly',
@@ -82,7 +80,7 @@ async function runDemo() {
     sourceRef: 'https://attacker-invoices.com/inv-402.pdf',
   };
 
-  console.log(`   📄 Agent reads incoming vendor invoice: ${poisonedListing.sourceRef}`);
+  console.log(`   📄 Fixture source reference: ${poisonedListing.sourceRef}`);
   console.log(`   ⚠️  Invoice Content:`);
   console.log(`      "${yellow(poisonedListing.description)}"`);
   console.log();
@@ -94,11 +92,11 @@ async function runDemo() {
   }
   console.log();
 
-  console.log(bold('   [The Vulnerability: The Unprotected Agent]'));
-  console.log(`      In a standard setup without a gateway, the LLM obeys the prompt injection:`);
-  console.log(`      → Hijacked Recipient:  ${red('0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF')}`);
-  console.log(`      → Hijacked Seller:     ${red('0xAttacker_Malicious_Cartel')}`);
-  console.log(`      💥 ${bold(red('OUTCOME WITHOUT GUARD: Unauthorized wire executed! Corporate funds stolen.'))}`);
+  console.log(bold('   [Illustrative Unprotected-Agent Proposal]'));
+  console.log(`      This is a hardcoded proposal; no model is run and no attack success is observed.`);
+  console.log(`      → Example Recipient:  ${red('0xDeaDbeefdEAdbeefdEadbEEFdeadbeEFdEaDbeeF')}`);
+  console.log(`      → Example Seller:     ${red('0xAttacker_Malicious_Cartel')}`);
+  console.log(`      ℹ ${bold('Illustration only: no wire was executed and no funds were moved.')}`);
   console.log();
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -123,7 +121,7 @@ async function runDemo() {
     },
   };
 
-  console.log(`   🔍 Intercepting Proposal before payment adapter...`);
+  console.log(`   🔍 Local fixture checks before the fake adapter...`);
   const isSellerMatch = trustedIntent.seller === hijackedProposal.sellerId;
   const isDestinationAllowed = trustedIntent.allowedDestinations.includes(
     hijackedProposal.providerArgs.recipient
@@ -134,9 +132,9 @@ async function runDemo() {
   console.log(`      • Heuristic Prompt Scanner: ${red('INJECTION_FLAGGED')}`);
   console.log();
 
-  console.log(bold(`   🛑 GATEWAY DECISION: ${red('REJECTED')}`));
-  console.log(`      Reason Codes: [${red('SELLER_MISMATCH')}, ${red('DESTINATION_NOT_ALLOWED')}, ${red('INJECTION_FLAGGED')}]`);
-  console.log(`      HMAC Approval Token: ${dim('NONE (Issuance Denied)')}`);
+  console.log(bold(`   🧪 LOCAL FIXTURE POLICY PROJECTION: ${red('REJECTED')}`));
+  console.log(`      Example Reasons: [${red('SELLER_MISMATCH')}, ${red('DESTINATION_NOT_ALLOWED')}, ${red('INJECTION_FLAGGED')}]`);
+  console.log(`      Gateway response / HMAC issuance: ${dim('not exercised by this script')}`);
   console.log();
 
   console.log(bold('   [GOAT Payment Adapter Execution Safety Gate]'));
@@ -184,14 +182,14 @@ async function runDemo() {
 
   console.log(`      • Adapter Execution Status: ${red(attackResult.status.toUpperCase())}`);
   console.log(`      • Adapter Reason:           ${attackResult.reason}`);
-  console.log(`      • On-Chain Broadcasts:      ${green(`${broadcastCount} transactions`)}`);
-  console.log(`      • Treasury Impact:          ${bold(green('0 satoshis moved ($0.00 loss)'))}`);
+  console.log(`      • Mock Signer Calls:        ${green(`${broadcastCount} simulated callback(s)`)}`);
+  console.log(`      • Chain Evidence:           None; RPC and receipt are fixtures.`);
   console.log();
 
   // ──────────────────────────────────────────────────────────────────────────
-  // STEP 4: CLEAN AUTHORIZED PURCHASE SETTLEMENT
+  // STEP 4: MOCKED CLEAN-PATH ADAPTER FIXTURE
   // ──────────────────────────────────────────────────────────────────────────
-  console.log(bold('✅ STEP 4: Legitimate Authorized Purchase Settles on GOAT Testnet'));
+  console.log(bold('🧪 STEP 4: Mocked clean-path adapter response (no settlement)'));
   hr();
 
   const cleanProposal = {
@@ -210,17 +208,17 @@ async function runDemo() {
     },
   };
 
-  console.log(`   📄 Ingesting clean official vendor invoice...`);
+  console.log(`   📄 Loading synthetic clean listing fixture...`);
   console.log(`      • Seller:       ${cleanProposal.sellerId}`);
   console.log(`      • Destination:  ${cleanProposal.providerArgs.recipient}`);
   console.log(`      • Amount:       0.012 BTC (${cleanProposal.money.amount} wei)`);
   console.log();
 
-  console.log(bold(`   ✅ GATEWAY DECISION: ${green('APPROVED')}`));
-  const approvalId = 'apr_live_demo_corp_token_888';
-  const executionId = 'exe_live_demo_run_888';
-  console.log(`      • Approval Token:  ${cyan(approvalId)} (Single-use HMAC signed)`);
-  console.log(`      • Execution ID:    ${cyan(executionId)}`);
+  console.log(bold(`   🧪 FIXTURE AUTHORITY DECISION: ${green('APPROVED')}`));
+  const approvalId = 'apr_mock_demo_token_888';
+  const executionId = 'exe_mock_demo_run_888';
+  console.log(`      • Mock Approval Reference: ${cyan(approvalId)}`);
+  console.log(`      • Mock Execution ID:       ${cyan(executionId)}`);
   console.log();
 
   const mockTx = '0x9e4c1f3d8a7b65c2e01fa3856b4c12d90ef238a1bc7654de321908abf5432109';
@@ -299,21 +297,20 @@ async function runDemo() {
     spendAuthorization: { ownerId: trustedIntent.owner, authorizationId: 'auth-1', maxAmountWei: trustedIntent.maxAmount },
   });
 
-  console.log(`      • Settlement Status:     ${green(legitResult.status.toUpperCase())}`);
-  console.log(`      • GOAT Transaction Hash: ${cyan(legitResult.providerReference)}`);
-  console.log(`      • Block Number:          999 (GOAT Testnet3)`);
-  console.log(`      • Confirmations:         2 blocks verified`);
-  console.log(`      • Audit Chain:           ${green('RECORDED & HASH-LINKED')}`);
+  console.log(`      • Mock Adapter Status: ${green(legitResult.status.toUpperCase())}`);
+  console.log(`      • Mock Transaction ID: ${cyan(legitResult.providerReference)}`);
+  console.log(`      • Mock Receipt:         block 999 / success (fixture data)`);
+  console.log(`      • Persisted Audit:      Not recorded by this script`);
   console.log();
 
   // ──────────────────────────────────────────────────────────────────────────
   // SUMMARY
   // ──────────────────────────────────────────────────────────────────────────
   hr('═');
-  console.log(bold(green('🎉 DEMONSTRATION VERIFIED: ZERO-TRUST PAYMENT BOUNDARY PROVEN')));
-  console.log(`   1. Unprotected agent was successfully hijacked by prompt injection.`);
-  console.log(`   2. Agentic Payment Guard blocked the payment before any funds could move.`);
-  console.log(`   3. Legitimate authorized purchase completed and settled seamlessly on GOAT Network.`);
+  console.log(bold(green('SYNTHETIC FIXTURE COMPLETE — NOT LIVE ACCEPTANCE EVIDENCE')));
+  console.log(`   1. A hardcoded unprotected proposal is shown as an illustrative attack.`);
+  console.log(`   2. A fake authority response models a blocked proposal; no live gateway was called.`);
+  console.log(`   3. The clean-path adapter result is mocked; no purchase or GOAT settlement occurred.`);
   hr('═');
   console.log();
 }

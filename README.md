@@ -17,12 +17,12 @@ Autonomous AI agents are being handed wallets, credit cards, and signing authori
 
 ## ⚡ Our Solution: The Dual-Control Deterministic Gateway
 
-**Agentic Payment Guard** creates a physical and cryptographic air-gap between untrusted AI agents and financial execution rails:
+**Agentic Payment Guard** is designed to place deterministic authorization between untrusted agent proposals and payment adapters. The diagram below shows the intended architecture; it is not evidence of a complete integrated or live payment flow.
 
 ```
 ┌─────────────────────────────────┐       ┌─────────────────────────────────────────┐
 │   Out-of-Band Human Principal   │       │           Untrusted AI Agent            │
-│ (Treasury / Business Operations)│       │ (Gemini 3.5 Flash / Claude / AutoGPT)  │
+│ (Treasury / Business Operations)│       │ (Untrusted agent; provider not selected)│
 └────────────────┬────────────────┘       └────────────────────┬────────────────────┘
                  │ 1. Pre-Authorizes Intent                    │ 2. Reads Vendor Invoice
                  │    (Max $50, Seller X, Single-Use)          │    (Poisoned / Injected)
@@ -30,70 +30,78 @@ Autonomous AI agents are being handed wallets, credit cards, and signing authori
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │               🛡️ AGENTIC PAYMENT GUARD SECURITY GATEWAY (PORT 3000)                │
 │                                                                                   │
-│  [Heuristic & Document Inspection] ──► Extracts invisible font streams & tokens    │
-│  [Deterministic Policy Engine]     ──► Microsecond BigInt math & whitelist checks │
-│  [Anti-Replay & Expiry Enclave]    ──► Atomic PostgreSQL state machine            │
-│  [Cryptographic Audit Ledger]      ──► Tamper-proof SHA-256 continuous hash chain │
+│  [Advisory Inspection]             ──► Scans text; does not guarantee detection   │
+│  [Deterministic Policy Engine]     ──► Evaluates proposals against intents       │
+│  [Gateway and Database]            ──► Source exists; PostgreSQL integration open │
+│  [Append-only Audit Chain]         ──► Hash verification code and route exist     │
 └─────────────────────────────────┬─────────────────────────────────────────────────┘
                                   │ 3. Issues Single-Use HMAC Capability Token
                                   ▼
 ┌───────────────────────────────────────────────────────────────────────────────────┐
 │                       PAYMENT ADAPTERS (RESTRICTED ACCESS)                        │
 │                                                                                   │
-│  • GOAT Network Testnet3 Bridge (Chain ID: 48816, RPC: rpc.testnet3.goat.network) │
-│  • Fiat / Credit Card Settlement Adapters                                         │
+│  • GOAT adapter boundary (live gateway execution unverified)                     │
+│  • Qatom discovery client (checkout remains disabled)                            │
 └───────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Architectural Pillars:
-1. **Zero LLM in the Critical Payment Path:** The Gateway evaluates policies using pure deterministic BigInt arithmetic and cryptographic lookups (**< 1.5ms per verification, 15,000+ TPS**). No GPU costs, no hallucinations, zero prompt injection surface.
-2. **Zero-Gas Attack Rejection:** Malicious attacks are intercepted and blocked off-chain. Treasury wallets spend **$0.00 in gas fees or RPC costs** on blocked attempts.
-3. **Dual-Control Air Gap:** AI agents have **zero private keys, zero wallet seeds, and zero signing authority**. The gateway only issues single-use cryptographic HMAC execution tokens when all invariants pass.
-4. **Tamper-Proof Audit Chain:** Every single creation, approval, and blocked attack is linked into a continuous SHA-256 hash chain (`SHA-256(prev_hash + payload)`), making insider fraud mathematically impossible to hide.
+1. **Deterministic policy:** The gateway source evaluates proposals against stored intent constraints. Current PostgreSQL-backed integration and concurrency behavior remain unverified.
+2. **Advisory inspection:** Text and PDF extraction can provide findings, but scanner coverage is incomplete and findings are not payment authorization.
+3. **Guarded adapter boundary:** Adapter source has fail-closed checks, but a complete gateway-bound provider payment and checked receipt have not been demonstrated.
+4. **Audit verification:** Hash-chain code and an audit verification route exist. A valid chain does not prove that every required event or provider outcome is recorded or visible.
 
 ---
 
-## 🚀 Live Track 3 Demonstrations (Run in 10 Seconds)
+## Local fixtures and read-only probes
 
-All components run with comprehensive end-to-end test fixtures:
+These scripts are not a complete end-to-end purchase demonstration. Read the comments and output for each script before using a configured local gateway.
 
 ```bash
-# 1. Full Attack & Defense Scenario (Hijacked invoice vs clean purchase)
+# Synthetic proposals and mocked adapter responses; no model, gateway, wallet, or chain call
 npm run demo:attack
 
-# 2. Adversarial Invisible PDF Invoice Attack (PyMuPDF render_mode=3 extraction)
+# Checked-in PDF extraction and local illustrative policy projection; no gateway call
 npm run demo:pdf
 
-# 3. Replay & Expired Intent Attack Defense (Single-use exhaustion)
+# Replay script currently sends proposals without required sourceRef; expect schema-invalid, not policy evidence
 npm run demo:replay
 
-# 4. Cryptographic SHA-256 Audit Chain Verification
+# Audit-chain check against a configured local gateway
 npm run demo:audit
 
-# 5. Live GOAT Network Testnet3 Blockchain Connection (Chain ID 48816)
+# Read-only GOAT Testnet3 RPC probe plus fake local adapter boundary
 npm run demo:goat
 ```
 
 ---
 
-## 💻 Web Console & Interactive AI Playground
+`demo:goat` performs public chain reads and a balance query. It does not broadcast a transaction.
+`demo:attack` uses fake authorities and receipts; its clean path is not settlement evidence. The
+PDF script computes an illustrative result locally. The replay script omits the gateway-required
+`sourceRef`, so its requests currently do not check zero-use/expiry policy; it also does not consume
+the same approval twice. The audit script prints invalid-chain status but does not exit nonzero.
+None of these scripts proves a provider payment or full PRD acceptance.
 
-A real-time Next.js console with a **Live Gemini 3.5 Flash Playground** is included:
+## Web console and synthetic playground
 
-- **Web Dashboard:** `http://localhost:3001`
-- **Security Gateway API:** `http://localhost:3000`
+The Next.js console is a local/test interface. Its playground uses user-entered synthetic text;
+live Gemini calls are disabled until a numeric spend limit is approved and enforced.
+
+- **Web Dashboard:** `http://127.0.0.1:3001`
+- **Security Gateway API:** `http://127.0.0.1:3000`
 - **Interactive Scenarios:**
-  - 🚨 *Store Hijack Attack:* Test real prompt injection against Gemini 3.5 Flash live.
-  - 📄 *Invisible PDF Invoice Attack:* Experience prompt injection hidden in invisible font layers.
-  - ✅ *Clean Purchase:* Watch legitimate approvals pass and issue cryptographic HMAC tokens.
-  - 🔗 *Live Audit Chain Pill:* Instant visual verification of ledger integrity (`✓ Ledger Valid`).
+  - Synthetic proposal scenarios are checked by the configured local gateway.
+  - PDF extraction findings are advisory; they do not authorize payment.
+  - The console does not call payment adapters or claim settlement. Persisted proposal, review, and payment history depends on owner-scoped gateway APIs that are not yet available.
+  - The audit-chain badge reports chain integrity only; it does not prove that all decisions or payment outcomes are displayed.
 
 ---
 
 ## 🧪 Test Suite & Code Quality
 
 ```bash
-# Run 89 unit & integration tests across 18 test files
+# Run the current local test suite
 npm test
 
 # Run TypeScript typechecks across all 6 workspaces

@@ -9,10 +9,10 @@ const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 
 console.log(bold('\n============================================================='));
-console.log(bold('  STAGE 4 STEP 3: CRYPTOGRAPHIC AUDIT CHAIN VERIFICATION      '));
+console.log(bold('  LOCAL GATEWAY AUDIT CHAIN INTEGRITY CHECK                   '));
 console.log(bold('=============================================================\n'));
 
-console.log(cyan('1. Querying Live Security Gateway Cryptographic Audit Ledger:'));
+console.log(cyan('1. Querying the configured local gateway audit verification route:'));
 console.log(`   Gateway Endpoint: ${GATEWAY_URL}/audit/chain/verify`);
 
 const res = await fetch(`${GATEWAY_URL}/audit/chain/verify`, {
@@ -28,9 +28,11 @@ if (!res.ok) {
 }
 
 const auditStatus = await res.json();
-console.log(`   Verification Status:   ${auditStatus.valid ? green('VALID (UNBROKEN)') : red('TAMPERED')}`);
-console.log(`   Total Verified Blocks: ${bold(auditStatus.totalEntries.toString())}`);
-console.log(green('   ✓ Complete SHA-256 hash sequence verified from Genesis (0000...)\n'));
+const validChain = auditStatus && auditStatus.valid === true;
+console.log(`   Verification Status:   ${validChain ? green('VALID') : red('INVALID OR UNCONFIRMED')}`);
+console.log(`   Entries Checked:       ${bold(String(auditStatus?.totalEntries ?? 'unavailable'))}`);
+if (validChain) console.log(green('   Hash-chain verification passed for the returned audit entries.\n'));
+else console.log(red('   Hash-chain verification did not pass. No integrity claim is made.\n'));
 
 // 2. Fetch recent audit records
 console.log(cyan('2. Inspecting Recent Cryptographic Hash Blocks in PostgreSQL:'));
@@ -54,14 +56,14 @@ if (Array.isArray(records) && records.length > 0) {
 console.log('');
 
 // 3. Explain the Tamper-Resistance Math
-console.log(cyan('3. Why This Prevents Insider Fraud & Database Tampering:'));
+console.log(cyan('3. Hash-chain limitation:'));
 console.log('   Each row hash is calculated as:');
 console.log(yellow('     SHA-256(prevHash | eventType | entityType | entityId | role | canonicalPayload | timestamp)'));
-console.log('   If an attacker or rogue DBA changes even one character of a blocked transaction:');
+console.log('   A changed recorded row should invalidate its hash and subsequent links.');
 console.log('   - The recalculated SHA-256 hash changes completely.');
 console.log('   - Every subsequent block\'s `prev_hash` becomes invalid.');
-console.log(`   - ${GATEWAY_URL}/audit/chain/verify immediately detects the exact fraud row!\n`);
+console.log(`   - ${GATEWAY_URL}/audit/chain/verify checks the returned chain; this is not a guarantee against every insider threat.\n`);
 
 console.log(bold('============================================================='));
-console.log(green('  CRYPTOGRAPHIC AUDIT CHAIN INTEGRITY VERIFIED (SOC2 READY)  '));
+console.log(validChain ? green('  LOCAL AUDIT CHAIN CHECK PASSED                           ') : red('  LOCAL AUDIT CHAIN CHECK FAILED OR UNCONFIRMED             '));
 console.log(bold('=============================================================\n'));

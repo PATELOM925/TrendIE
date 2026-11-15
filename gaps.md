@@ -30,7 +30,7 @@ The most important blockers are:
 - `packages/contracts` defines a versioned proposal with `ownerId`, `intentVersion`, `platform`, `itemId`, `sellerId`, scaled integer `money`, `asset`, `chain`, and `providerArgs`.
 - The gateway and web BFF still use a legacy proposal shape: `intentId`, seller, product, amount, currency, destination, and source reference.
 - The intent and approval API does not yet expose the same versioned, provider-specific binding expected by QPE adapters.
-- The web UI supports only USDC/USDT with six decimal places. Qatom uses USD-TDN with scale 3; GOAT native transfers use a different asset and scale. The UI cannot currently register the platform-specific intents required by both integrations.
+- The web UI supports only demo USDC/USDT with six decimal places and now states this limitation in the authorization form. Qatom uses USD-TDN with scale 3; GOAT native transfers use a different asset and scale. The UI cannot currently register the platform-specific intents required by both integrations.
 - Approval, execution result, continuation, checkpoint, and reconciliation contracts still differ between gateway routes and the GOAT/Qatom authority ports.
 
 **Needed to close:** agree and version one intent/proposal/approval/result contract; add compatibility tests across the gateway, frontend BFF, agent, and adapters; remove legacy coercions and unsupported placeholder mappings.
@@ -45,7 +45,7 @@ The most important blockers are:
 - In the reviewed environment, Docker Desktop's engine was unavailable and no PostgreSQL Windows service was found. No local database was confirmed running.
 - No current-revision migrations, gateway endpoint integration tests, or frontend-to-database flow were run.
 - Gateway tests require an explicitly isolated PostgreSQL test database. Existing fixtures truncate the audit log, which conflicts with the audit protections; a safe reset strategy is still required before running the database suite.
-- `docs/team-setup-guide.md` references `npm run gateway:db:migrate`, but the root script is `db:migrate`.
+- `docs/team-setup-guide.md` now references the root `npm run db:migrate` script. PostgreSQL itself remains unverified here.
 
 **Needed to close:** start a disposable local PostgreSQL instance; fix the fixture reset conflict; run migrations and seed only against that disposable instance; execute gateway and frontend endpoint tests and record the exact revision/results.
 
@@ -99,14 +99,14 @@ The most important blockers are:
 **Accountable owner:** Person 4 / Om (agent and attack testing)  
 **Supporting owners:** Person 1 / Awais (gateway decision), Person 5 / Nasar (playground integration)
 
-- The repository now contains an optional Gemini model adapter and a web playground route that can send an untrusted listing to Gemini, then send its proposal to the gateway.
-- No live model attack result is recorded. The live route has no numeric model-spend authorization check; a configured `GEMINI_API_KEY` plus user action can make an external model request. Do not treat it as approved paid testing without a separate ceiling and authorization.
-- The scripted `demo:attack` does not call a real model for the unprotected scenario. It hardcodes the attacker's proposal and prints a successful outcome.
+- The repository contains an optional Gemini model adapter package. The web route now rejects live-model requests before any network call; the console playground only sends user-authored synthetic text and proposal fields.
+- No live model attack result is recorded. Re-enable the web route only after Person 4 supplies enforced numeric spend controls and a separate paid-call authorization exists.
+- The scripted `demo:attack` does not call a real model for the unprotected scenario. It hardcodes the attack proposal and labels it illustrative; it does not prove an attack succeeded.
 - The protected “clean purchase” uses a fake gateway authority, fake signer, fake transaction hash, and fake RPC receipt; it does not settle on GOAT.
-- The Gemini playground always sends its proposal through the gateway. It is not, by itself, a paired vulnerable-agent path that demonstrates the same attack succeeding without the gateway and then being stopped with it.
-- The PRD's specified architecture names the OpenAI Agents SDK, while the live UI playground uses Gemini through a custom model adapter. If Gemini is the intended replacement, record that architecture decision and make sure the shared workflow and spend controls still apply.
+- The synthetic playground sends its user-authored proposal through the gateway. It is not a paired vulnerable-agent path that demonstrates the same attack succeeding without the gateway and then being stopped with it.
+- The PRD's specified architecture names the OpenAI Agents SDK, while an optional Gemini adapter package also exists. If Gemini is intended as a replacement, record that architecture decision and ensure the shared workflow and spend controls apply before enabling it.
 
-**Needed to close:** implement a controlled unprotected agent and a protected path using the same malicious input; capture reproducible model output and gateway evidence; keep wallet/payment credentials inaccessible to the model; add an explicit provider-spend gate before any live model call.
+**Needed to close:** Person 4 implements a controlled unprotected agent and protected path using the same malicious input; capture reproducible model output and gateway evidence; keep wallet/payment credentials inaccessible to the model; add an explicit provider-spend gate before any live model call.
 
 ### G-07 — PDF extraction is not in the purchase workflow
 
@@ -116,10 +116,13 @@ The most important blockers are:
 
 - A hidden-text adversarial PDF fixture exists. `scripts/demo-pdf-attack.mjs` extracts it with PyMuPDF and runs the heuristic scanner.
 - That script manually computes a rejection rather than submitting the extracted evidence and proposal to the actual gateway.
-- The web “Invisible PDF Attack” control inserts explanatory text into a text field; it does not upload or parse the PDF fixture.
-- PDF findings are not shown as persisted evidence associated with a gateway decision/outcome.
+- The synthetic playground's “Synthetic PDF Text Fixture” control still inserts explanatory text; the separate upload panel now sends a selected PDF through the existing bounded PyMuPDF extractor and the same `/api/verify` gateway path used for text proposals.
+- Uploaded PDF bytes are written to a unique temporary directory and deleted in a `finally` block after extraction. The UI displays the source filename, page/character counts, extracted text, limitations, advisory findings, and gateway decision; it does not infer an invoice amount or destination.
+- The gateway verify endpoint persists a proposal and inspection in source, but PostgreSQL behavior is unverified and the console still has no owner-scoped read API to reconstruct that evidence after reload.
 
-**Needed to close:** bounded upload or local-file ingestion; call the existing resource-limited extractor; pass extracted text/evidence through the same agent and gateway flow as listings; display and persist source, findings, extraction limitations, and the resulting gateway decision.
+**Progress:** Person 5 added transient upload, bounded extraction, same-flow verification, and evidence display. The local UI/API checks and Python extractor tests passed on this branch.
+
+**Needed to close:** Person 4 validates extraction behavior/coverage and hidden-text fixtures; Person 1 verifies persistence under an isolated PostgreSQL database and adds owner-scoped history reads so evidence can be reconstructed after reload. Scanner findings remain advisory.
 
 ### G-08 — Decisions, outcomes, and human review are not fully available in the UI
 
@@ -131,10 +134,12 @@ The most important blockers are:
 - A verification decision is displayed as **not executed**; the UI does not consume approval or call an adapter.
 - Session decisions are lost on reload. The persisted audit view currently focuses on intent-created events; it does not reconstruct proposal, inspection, decision, and execution records as a coherent history.
 - The audit-chain verification endpoint/UI can check chain integrity, but that is not a transaction history or proof that every required outcome is present.
-- Gateway review-resolution API exists, but the console has no review queue or approval/rejection controls for an authorized human.
+- A gateway review-resolution POST exists for dashboard/admin service roles, but it does not establish an authenticated reviewer identity or owner-scoped review queue; the console has no review controls.
 - Payment states such as `submitting`, `pending`, `pending_approval`, `succeeded`, `failed`, and `unknown`, plus provider receipts/references, are not presented as a connected lifecycle in the console.
+- Person 5's UI now labels current decisions as session-only and explains that persisted proposal, inspection, review, and payment history is unavailable. `/audit` events do not carry a usable intent binding for verified decisions, and the gateway has no owner-scoped review-list or decision/proposal/evidence history endpoint. The existing review-resolution POST is not enough to build a safe queue.
+- The audit badge now describes hash-chain integrity only; it does not claim all decisions are visible or that a payment settled.
 
-**Needed to close:** add owner-scoped persisted history and review routes; show proposal, intent, decision reasons, inspection evidence, execution status and checked receipt; represent `unknown` and pending states without converting them to success or failure; add authorized review controls and prove unresolved proposals cannot execute.
+**Needed to close:** Person 1 adds owner-scoped persisted history and review-list/read APIs with approved fields and authenticated reviewer identity; provider owners expose checked execution status and receipt facts. Person 5 can then display proposal, intent, reasons, inspection evidence, execution status and receipt, distinguish `unknown` and pending, and add reviewer controls. Prove unresolved proposals cannot execute.
 
 ### G-09 — Demo scripts and docs overstate some evidence
 
@@ -142,14 +147,15 @@ The most important blockers are:
 **Accountable owner:** Person 5 / Nasar (integrated demo and documentation)  
 **Supporting owners by evidence:** Person 1 / Awais (replay and audit demos), Person 2 / GOAT (`demo:goat`), Person 4 / Om (agent and PDF demos)
 
-- `scripts/demo-attack.mjs` prints that a clean purchase settled on GOAT, but its authority, signer, transaction hash, and receipt are simulated.
-- `scripts/demo-goat-live.mjs` performs read-only RPC calls; it does not submit a transaction despite the “live bridge” wording.
-- `scripts/demo-replay-attack.mjs` logs that an approval was consumed but does not call the approval-consume endpoint for that approved proposal. It creates a separate zero-use intent to model exhaustion, which is not a duplicate-consumption test.
-- The PDF demo uses a real fixture/extractor but manually computes the gateway result.
-- The README and setup guide describe “live” or “settled” demos more strongly than those scripts establish.
-- Setup documentation contains the `gateway:db:migrate` script-name mismatch noted in G-02.
+- `scripts/demo-attack.mjs` now labels its mock authority, signer, transaction hash, and receipt as synthetic; no gateway or chain is called.
+- `scripts/demo-goat-live.mjs` is labeled as a read-only RPC probe plus local fake-authority check; it does not submit a transaction.
+- `scripts/demo-replay-attack.mjs` now prints actual HTTP/decision fields, but it still does not call the approval-consume endpoint for the first proposal. Its `validProposal` omits required `sourceRef`, so the local gateway returns schema-invalid rather than testing zero-use/expiry policy. The script does not fail on unexpected responses.
+- The PDF CLI demo uses a real fixture/extractor but manually computes an illustrative result. The web UI now has a separate bounded upload flow; see its test evidence after integration.
+- The audit demo no longer claims SOC 2 readiness or prints a passing message when verification is invalid; however, it still exits successfully if the chain is invalid.
+- The README, setup guide, and demo output now label the attack, PDF, replay, and GOAT scripts as synthetic, local policy checks, or read-only probes as applicable. Their underlying mock/replay behavior is unchanged and still does not meet end-to-end acceptance.
+- The setup guide's migration command now matches the root `db:migrate` script.
 
-**Needed to close:** label mocks and read-only probes explicitly; make success claims conditional on checked provider evidence; replace the replay demo with a true second consume attempt on the same approval; align run commands with package scripts; keep live evidence separate from fixture/test evidence.
+**Needed to close:** the replay demo owner must add required fields, validate zero-use/expiry API results, and add a true second consume attempt on the same approval; the audit demo owner must use a nonzero exit status for invalid verification. Keep live provider evidence separate from fixture/test evidence. Current labels and setup command are corrected.
 
 ### G-10 — Feature status and project documentation need reconciliation
 
@@ -157,12 +163,14 @@ The most important blockers are:
 **Accountable owner:** Person 5 / Nasar (plan, feature list, and handoff consistency)  
 **Supporting owners:** each feature owner validates the evidence for their feature; Om owns the main-branch release gate
 
-- `feature_list.json` marks F-001–F-010 and F-013 `implemented`, despite the acceptance gaps in this document. F-011 and F-012 are `not_started`.
+- **Historical finding from the initial gap review:** `feature_list.json` marked F-001–F-010 and F-013 `implemented`, despite the acceptance gaps in this document; F-011 and F-012 were `not_started`. The current status legend and evidence-based rows are documented in the progress note below.
 - `CONTEXT.md` and parts of `docs/team-handoff.md` still describe the frontend as unmerged or ask for a PR into develop, even though the frontend commits are ancestors of the current develop head.
 - `docs/integration.md` retains earlier pinned-source language and should be refreshed to distinguish newly added active-mode GOAT HTTP code from verified trusted gateway integration.
 - The root README's test count and current demo claims have not been verified on `497db86`.
 
-**Needed to close:** use evidence-based states such as `partial`, `blocked`, or `verified` (if the schema is extended); update branch/merge facts; preserve explicit limits of source tests, mocked demos, database tests, and provider evidence.
+**Progress:** `feature_list.json` now defines `verified`, `partial`, `blocked`, and `not_started` and no longer marks incomplete P0/P1 features as implemented. See status notes for remaining component-owner validation.
+
+**Needed to close:** feature owners validate their rows against current evidence; update branch/merge facts after integration; preserve explicit limits of source tests, mocked demos, database tests, and provider evidence.
 
 ## PRD acceptance still outstanding
 

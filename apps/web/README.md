@@ -34,14 +34,22 @@ talks only to same-origin Next.js routes; those routes call a fixed loopback gat
 - Sends synthetic proposal scenarios to the gateway's deterministic `/verify` endpoint.
 - Runs the existing heuristic text scanner on the server and passes its findings as advisory
   inspection signals. Findings may be incomplete and never decide authorization.
-- Shows gateway decisions, reason codes, the compared intent/proposal, scanner evidence, local-session
-  activity, and allowlisted intent-created audit entries.
+- Uploads text-layer PDFs through a same-origin server route. It enforces the extractor's file/page/
+  character/time limits, rejects encrypted files, deletes the temporary source in a `finally` block,
+  and scans and verifies extracted text on the server in the same request.
+- Shows the extraction source, findings, limitations, gateway decision, session activity, and
+  allowlisted intent-created audit entries.
 
 An approved decision is displayed as **not executed**. The UI does not consume approvals or invoke
 GOAT/Qatom payment adapters. It has no login and must not be exposed as a multi-user or public app.
 The persisted gateway audit feed currently cannot reconstruct the full proposal and inspection
 evidence for a decision after reload; the console labels decision history as session-only.
 
-The UI currently scans supplied text and synthetic listing fixtures. It does not yet upload or
-extract PDF invoices. PDF extraction and live payment execution remain separate PRD work and are not
-claimed by this frontend.
+PDF upload is transient: raw files and full extracted text are not retained. The gateway records
+decision and scanner evidence, but the current browser history cannot reload those findings or
+decisions. Owner-scoped history and authenticated review controls remain blocked on gateway APIs.
+PDF inspection is advisory; it does not infer an invoice amount or submit a payment. Live payment
+execution remains unimplemented.
+
+PDF upload requires Python 3 and PyMuPDF (`python -m pip install PyMuPDF`). Set `PDF_PYTHON` in the
+server environment when the Python executable is not named `python` on Windows or `python3` elsewhere.

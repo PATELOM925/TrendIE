@@ -4,12 +4,12 @@ const API_KEY_AGENT = 'dev-agent-key-1234';
 
 const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 const red = (s) => `\x1b[31m${s}\x1b[0m`;
-const green = (s) => `\x1b[32m${s}\x1b[0m`;
 const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 
 console.log(bold('\n============================================================='));
-console.log(bold('  STAGE 4 STEP 2: REPLAY & EXPIRY ATTACK DEFENSE DEMO        '));
+console.log(bold('  LOCAL GATEWAY POLICY CHECK: ZERO-USE AND EXPIRED INTENTS   '));
 console.log(bold('=============================================================\n'));
+console.log('This script does not consume an approval twice and is not a duplicate-execution test.\n');
 
 // Helper for HTTP requests
 async function callApi(path, options = {}) {
@@ -69,15 +69,15 @@ const verify1Res = await callApi('/verify', {
   body: JSON.stringify({ proposal: validProposal }),
 });
 
-console.log(`   Gateway Decision: ${green('APPROVE')}`);
-console.log(`   Approval ID:      ${bold(verify1Res.data.id || 'dec_sample')}`);
-console.log(green('   ✓ Gateway issued cryptographic HMAC authorization capability token.\n'));
+console.log(`   Verify HTTP Status: ${verify1Res.status}`);
+console.log(`   Gateway Decision:   ${verify1Res.data.decision?.toUpperCase() ?? 'UNCONFIRMED'}`);
+console.log(`   Decision ID:        ${bold(verify1Res.data.id ?? 'Not returned')}`);
+console.log('   This script does not display approval references or claim a payment.\n');
 
 // 3. Consume the approval
-console.log(cyan('3. Consuming Approval Capability via Payment Adapter...'));
-// Let's create an approval row in gateway for consumption demo if approval endpoint issued
-console.log('   Adapter claimed execution; decremented remaining uses on PostgreSQL.');
-console.log(`   Remaining Uses in DB: ${bold('0 (EXHAUSTED)')}\n`);
+console.log(cyan('3. Simulating an exhausted authorization with a separate zero-use intent...'));
+console.log('   No approval-consume endpoint is called for the first approved proposal.');
+console.log(`   This models policy exhaustion only; it does not prove replay protection.\n`);
 
 // Manually decrement remaining uses in gateway to simulate completed consumption:
 await callApi('/intents', {
@@ -98,8 +98,8 @@ await callApi('/intents', {
 });
 
 // 4. Attack: Replay the proposal
-console.log(cyan('4. Adversary Launching REPLAY ATTACK (Attempt #2 - Duplicate Submission):'));
-console.log('   Attacker captures previously approved parameters and resubmits to double-bill buyer.');
+console.log(cyan('4. Checking a proposal against the separate zero-use intent:'));
+console.log('   This is not a second consume of the original approval.');
 
 const replayRes = await callApi('/verify', {
   method: 'POST',
@@ -112,9 +112,10 @@ const replayRes = await callApi('/verify', {
   }),
 });
 
-console.log(`   Gateway Verdict:  ${red('REJECT (BLOCKED)')}`);
-console.log(`   Reason Codes:     ${red(replayRes.data.reasonCodes?.join(', ') || 'INTENT_EXHAUSTED')}`);
-console.log(green('   ✓ Replay Defeated: Zero funds moved on duplicate attempt!\n'));
+console.log(`   Gateway HTTP Status: ${replayRes.status}`);
+console.log(`   Gateway Verdict:     ${replayRes.data.decision?.toUpperCase() ?? 'UNCONFIRMED'}`);
+console.log(`   Reason Codes:        ${replayRes.data.reasonCodes?.join(', ') || 'No reason codes returned'}`);
+console.log('   No payment adapter was called.\n');
 
 // 5. Attack: Expired Intent
 console.log(cyan('5. Adversary Launching EXPIRED INTENT ATTACK (Stale Authorization):'));
@@ -149,10 +150,11 @@ const expiredRes = await callApi('/verify', {
   }),
 });
 
-console.log(`   Gateway Verdict:  ${red('REJECT (BLOCKED)')}`);
-console.log(`   Reason Codes:     ${red(expiredRes.data.reasonCodes?.join(', ') || 'INTENT_EXPIRED')}`);
-console.log(green('   ✓ Stale Intent Defeated: Timestamp expired, transaction halted!\n'));
+console.log(`   Gateway HTTP Status: ${expiredRes.status}`);
+console.log(`   Gateway Verdict:     ${expiredRes.data.decision?.toUpperCase() ?? 'UNCONFIRMED'}`);
+console.log(`   Reason Codes:        ${expiredRes.data.reasonCodes?.join(', ') || 'No reason codes returned'}`);
+console.log('   No payment adapter was called.\n');
 
 console.log(bold('============================================================='));
-console.log(green('  REPLAY & EXPIRY ATTACK DEFENSE VERIFIED                    '));
+console.log('  ZERO-USE AND EXPIRY POLICY CHECK ATTEMPT COMPLETE          ');
 console.log(bold('=============================================================\n'));
