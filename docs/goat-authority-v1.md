@@ -23,3 +23,6 @@ The response must be exactly `{ "version": 1, "kind": "claim", "status": "claime
 `GET /v1/goat/executions/{executionId}?ownerId={ownerId}` returns exactly `{ "version":1, "kind":"reconciliation", "executionId":"exec_1", "ownerId":"user_1", "proposal":<full persisted PurchaseProposal>, "binding":<full binding>, "phase":"signed|broadcast", "txHash":"0x<64 hex>" }`. Server must enforce owner scope. This lookup only informs receipt checks; it never signs, broadcasts, or resubmits.
 
 Until the server implements and independently verifies these contracts, all examples are proposed wire shapes for fake-fetch tests only.
+
+
+Synthetic route probe evidence at pinned gateway source `fcd8df68641b3550f392aff65f5c20067200585c`: [report](evidence/2026-11-15-goat-authority-fcd8df6.md) and [frozen mocked probe](evidence/2026-11-15-goat-authority-fcd8df6.test.ts.txt). The probe records mocked Fastify route behavior only; it is not PostgreSQL or live-service evidence.
