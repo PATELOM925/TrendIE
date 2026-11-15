@@ -364,9 +364,7 @@ export function GuardConsole() {
         <div className="topbar-inner">
           <div className="brand-lockup">
             <FoxMascot variant="header" size="sm" className="w-10 h-10" />
-            <span className="brand-name">Agentic Payment Guard</span>
-            <span className="brand-slash" aria-hidden="true">/</span>
-            <span className="console-title">Guard Console</span>
+            <span className="brand-name">Sentinel</span>
           </div>
           <span className="mode-pill">Local sandbox · No payments</span>
         </div>
@@ -663,7 +661,7 @@ function DecisionPanel({ attempt }: { attempt: Attempt | null }) {
             </div>
             <div style={{ padding: '10px', background: '#092317', border: '1px solid #14532d', borderRadius: '8px' }}>
               <div style={{ color: '#22c55e', fontWeight: 700, fontSize: '12px', marginBottom: '4px' }}>
-                🛡️ Agentic Payment Guard
+                🛡️ Sentinel
               </div>
               <p style={{ fontSize: '11px', color: '#86efac', margin: '0 0 6px 0', lineHeight: 1.4 }}>
                 Agent has zero signing keys. Gateway intercepts proposal and enforces deterministic policy off-chain in &lt;1.5ms:
