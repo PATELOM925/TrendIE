@@ -1,13 +1,11 @@
 const GATEWAY_URL = process.env.GATEWAY_URL || 'http://127.0.0.1:3000';
 const API_KEY_DASHBOARD = 'dev-dashboard-key-3456';
 const API_KEY_AGENT = 'dev-agent-key-1234';
-const API_KEY_GOAT = 'dev-goat-key-5678';
 
 const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 const red = (s) => `\x1b[31m${s}\x1b[0m`;
 const green = (s) => `\x1b[32m${s}\x1b[0m`;
 const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
-const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 
 console.log(bold('\n============================================================='));
 console.log(bold('  STAGE 4 STEP 2: REPLAY & EXPIRY ATTACK DEFENSE DEMO        '));

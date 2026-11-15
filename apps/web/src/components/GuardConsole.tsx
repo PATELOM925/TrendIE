@@ -656,9 +656,35 @@ function EvidencePanel({ attempt, expanded, onToggle }: { attempt: Attempt; expa
 }
 
 function ActivityPanel({ activity, loading, auditError }: { activity: Array<SessionActivity | SafeAuditEntry>; loading: boolean; auditError: boolean }) {
+  const [chainStatus, setChainStatus] = useState<{ valid: boolean; totalEntries: number } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/audit/verify')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { valid?: boolean; totalEntries?: number } | null) => {
+        if (data && typeof data.valid === 'boolean') {
+          setChainStatus({ valid: data.valid, totalEntries: data.totalEntries ?? 0 });
+        }
+      })
+      .catch(() => {});
+  }, [activity]);
+
   return (
     <aside className="panel activity-panel" aria-labelledby="activity-title">
-      <div className="activity-head"><h2 id="activity-title">Recent activity</h2><span className="strip-note">Local session + safe audit</span></div>
+      <div className="activity-head">
+        <h2 id="activity-title">Recent activity</h2>
+        {chainStatus?.valid ? (
+          <span
+            className="mode-pill"
+            style={{ background: '#edf8f1', color: '#16784b', borderColor: '#c9e7d5', fontSize: '9px', padding: '3px 7px' }}
+            title="Every decision is cryptographically sealed in an append-only SHA-256 hash chain in PostgreSQL."
+          >
+            ✓ Ledger Valid ({chainStatus.totalEntries})
+          </span>
+        ) : (
+          <span className="strip-note">Local session + safe audit</span>
+        )}
+      </div>
       {auditError && <p className="activity-detail" role="status">Saved audit entries are unavailable. Current session activity is still shown.</p>}
       {loading && <p className="empty-state">Loading activity…</p>}
       {!loading && activity.length === 0 && <p className="empty-state">No activity yet. Register an authorization or run a proposal.</p>}

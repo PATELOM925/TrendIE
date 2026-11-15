@@ -32,6 +32,7 @@
     "demo:goat": "node scripts/demo-goat-live.mjs",
     "demo:pdf": "node scripts/demo-pdf-attack.mjs",
     "demo:replay": "node scripts/demo-replay-attack.mjs",
+    "demo:audit": "node scripts/demo-audit-integrity.mjs",
     "qatom:probe": "node packages/qatom/dist/cli.js"
   },
   "devDependencies": {
