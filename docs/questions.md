@@ -18,6 +18,11 @@ question blocks only work that depends on its answer.
 | Q011 | Awais: which follow-up PR will cover the remaining non-blocking audit operations findings? | Final review on 9ffdba5 found P3-only local follow-ups: chain verification loads the full log; HMAC rejection is not audited and key_id rotation lookup is not implemented; new endpoint success/rejection paths need more mocked route tests; generic 4xx errors are an intentional diagnostic tradeoff. | Open follow-up. These do not block the reviewed local merge, but are not cleared for external/production use. Preserve key secrecy and owner scope while addressing them. |
 
 No Awais or Nassar agreement to proposed contracts is implied by visible source or local fake tests.
+
+## Coordination follow-up (2026-11-15)
+
+Person 5's controlled-comparison route is implemented in commit `c16e091` and uses PR #11's runner server-side with fixed fixture ports. The 133-test root suite, lint, web typecheck/build, and independent route review passed locally. This does not prove Gateway-backed enforcement, payment, or settlement. Om approved fixture integration only, not final adversarial clearance; Awais's contract confirmation is pending. Final `claude-opus-5-5` review remains authorized and unrun. See [AAT UI fixture integration](aat-ui-integration.md).
+
 The fake authority in `packages/integration.test.ts` exercises adapter boundaries with synthetic
 data only. The [dependency audit](dependencies.md) records current advisory counts and unresolved
 release risk.

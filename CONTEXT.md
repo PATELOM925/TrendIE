@@ -52,9 +52,22 @@ review controls still require owner-scoped Gateway APIs.
 | Person 4 / AAT, Om/Tirth | PR #11's bounded comparison harness and proposal-linked evidence are merged into this branch for UI integration; both outcomes remain `NOT_SETTLED`. | Final adversarial review, actual Gateway-backed attack evidence, any separately authorized live-model study, and provider-backed legitimate purchase remain open. |
 | Person 5 / Nasar | Local Next.js Sentinel console includes intent registration, gateway verification, transient bounded PDF extraction, and a controlled-comparison UI wired to PR #11's server-side runner with a local policy port. | Owner-scoped persisted history, authenticated review controls, provider receipts, shared authority contract alignment, and integrated PostgreSQL verification remain open. |
 
-The [integration matrix](docs/integration.md) separates reviewed defects from mitigations. PR #12
-proposes a disabled-by-default GOAT V1 client, but it is not merged; current `develop` still needs
-the owner-approved persisted authority and recovery endpoints. Do not infer server durability or
+### Coordination follow-up (2026-11-15)
+
+The comparison route and UI are implemented in commit `c16e091`; root tests (133), root lint,
+web typecheck, production build, and independent route review passed locally. The route uses the
+server-side fixture runner and local policy; this does not establish gateway-backed security or
+payment behavior. The sent and verified group response approved PR #11's runner interface for
+fixture integration only; it did not approve merge or final adversarial clearance. Awais's shared
+authority contract confirmation remains pending. The final `claude-opus-5-5` review is authorized
+when the specified work is ready and has not yet run. See [AAT UI fixture integration](docs/aat-ui-integration.md).
+
+The [integration matrix](docs/integration.md) separates the original reviewed defects from current
+mitigations. PRs #10, #11 and #12 are published or drafted against `develop`, and none is merged.
+The newer `develop` source still contains an active legacy GOAT client; do not describe both bridges
+as currently fail-closed. Keep the active bridge disabled pending a complete trusted binding.
+Neither the in-review replacements nor the legacy path establish the missing shared authority API.
+The matrix also separates the reviewed defects from mitigations. Do not infer server durability or
 safe payment execution from adapter fakes or draft-client tests.
 
 The candidate gateway now compares identity strings exactly, caps approval expiry by intent expiry,
