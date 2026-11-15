@@ -8,10 +8,25 @@ import { approvalRoutes } from './routes/approvals.js';
 import { executionRoutes } from './routes/executions.js';
 import { auditRoutes } from './routes/audit.js';
 import { reviewRoutes } from './routes/reviews.js';
+import { historyRoutes } from './routes/history.js';
+import { goatAuthorityRoutes } from './routes/goatAuthority.js';
+
+// Credentials must never reach logs, whichever serializer or error object carries them.
+const REDACTED_LOG_PATHS = [
+  'req.headers.authorization',
+  'req.headers["x-api-key"]',
+  'req.headers.cookie',
+  'headers.authorization',
+  'headers["x-api-key"]',
+  'err.config',
+  'err.connectionString',
+  '*.password',
+  '*.connectionString',
+];
 
 export async function buildServer(appConfig: Config = defaultConfig): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: appConfig.NODE_ENV === 'test' ? false : true,
+    logger: appConfig.NODE_ENV === 'test' ? false : { redact: { paths: REDACTED_LOG_PATHS, censor: '[REDACTED]' } },
   });
 
   app.setErrorHandler((error, req, reply) => {
@@ -25,7 +40,7 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
     origin: parseCorsOrigins(appConfig.CORS_ORIGINS),
   });
 
-  await app.register(authPlugin);
+  await app.register(authPlugin, { config: appConfig });
 
   app.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
@@ -37,6 +52,8 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
   await app.register(executionRoutes);
   await app.register(auditRoutes);
   await app.register(reviewRoutes);
+  await app.register(historyRoutes);
+  await app.register(goatAuthorityRoutes);
 
   return app;
 }

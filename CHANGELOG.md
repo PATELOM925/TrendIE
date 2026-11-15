@@ -11,6 +11,21 @@
   tests across 25 files); all five library builds and four PDF tests also passed. Both offline CLI modes remained `NOT_SETTLED`. These checks do not prove PR-head or
   global integration. Keep paid execution at zero, provider/authentication/price/receipt gates open,
   and all stages open with no final adversarial review claim.
+- Implement Awais gateway shared authority, binding, and owner-scoped history endpoints:
+  - Add migration `003_shared_binding_and_authority.sql` for `intents` (`intent_version`, `platform`, `chain`, `asset`, `scale`, `sender`), `approvals` (`owner_id`, `intent_version`, `bound_platform`, `bound_asset`, `bound_chain`, `bound_scale`, `bound_sender`, `bound_destination`, `spend_authorization_id`, `spend_ceiling`), and `executions` (`checkpoint_phase`, `checkpoint_tx_hash`, `owner_id`).
+  - Implement `GET /approvals/:id` returning authoritative persisted binding with platform scoping and HMAC verification.
+  - Implement owner-scoped history APIs (`GET /history/decisions?owner=...`, `GET /history/executions?owner=...`, `GET /history/review-queue?owner=...`, `GET /intents?owner=...`).
+  - Implement GOAT Authority V1 endpoints (`POST /v1/goat/approvals/:approvalReference/claim`, `PUT /v1/goat/executions/:executionId/checkpoint`, `PUT /v1/goat/executions/:executionId/outcome`, `GET /v1/goat/executions/:executionId`).
+  - Add 13 unit tests in `gateway/test/authority-history.test.ts` (96 gateway unit tests, 114 root tests pass; all typecheck and lint clean).
+
+- Record `develop` at `9133094` (Node 22.23.4: 114 root tests, 83 gateway unit tests pass, plus
+  typecheck and lint). This includes Tirth's paired attack comparison (G-06 closed), Nassar's
+  transient PDF upload UI, replay/expiry live-Gateway-and-PostgreSQL demo (G-09 partial), PDF demo
+  against live Gateway API and audit chain (G-07 closed), and documentation reconciliation. G-01,
+  G-02, G-03, G-04, G-05, G-08, and G-10 remain open.
+- Update CONTEXT.md and docs/plan.md: reflect current develop head, accurate test counts,
+  gap register status, and prioritized next-owner actions. No PostgreSQL integration, provider
+  settlement, or complete end-to-end acceptance is established.
 
 - Merge reviewed Om PRs #1–#3 and combined gateway PR #4 into develop. Final source 9ffdba5 is
   cleared for local/test integration only; main and production remain unchanged. Add the final

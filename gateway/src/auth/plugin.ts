@@ -1,8 +1,10 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
-import { config } from '../config.js';
+import { Config, config as defaultConfig } from '../config.js';
+import { createKeyRing, type UserRole } from './keyRing.js';
+import { createRateLimiter } from './rateLimit.js';
 
-export type UserRole = 'agent' | 'adapter-goat' | 'adapter-qatom' | 'dashboard' | 'admin';
+export type { UserRole } from './keyRing.js';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -10,29 +12,53 @@ declare module 'fastify' {
   }
 }
 
-const keyToRoleMap = new Map<string, UserRole>([
-  [config.API_KEY_AGENT, 'agent'],
-  [config.API_KEY_ADAPTER_GOAT, 'adapter-goat'],
-  [config.API_KEY_ADAPTER_QATOM, 'adapter-qatom'],
-  [config.API_KEY_DASHBOARD, 'dashboard'],
-  [config.API_KEY_ADMIN, 'admin'],
-]);
+function presentedKey(req: FastifyRequest): string | undefined {
+  const headerKey = req.headers['x-api-key'];
+  if (typeof headerKey === 'string') return headerKey;
+  if (req.headers.authorization?.startsWith('Bearer ')) return req.headers.authorization.slice(7).trim();
+  return undefined;
+}
 
-const authPluginAsync: FastifyPluginAsync = async (fastify) => {
+function tooManyRequests(reply: FastifyReply, retryAfterSeconds: number) {
+  return reply
+    .header('retry-after', String(Math.max(1, retryAfterSeconds)))
+    .status(429)
+    .send({ error: 'RATE_LIMITED', message: 'Too many requests' });
+}
+
+const authPluginAsync: FastifyPluginAsync<{ config?: Config }> = async (fastify, options) => {
+  const cfg = options.config ?? defaultConfig;
+  const keyRing = createKeyRing(cfg);
+  const windowMs = cfg.RATE_LIMIT_WINDOW_SECONDS * 1000;
+  const requestLimiter = createRateLimiter({ max: cfg.RATE_LIMIT_MAX, windowMs });
+  const failureLimiter = createRateLimiter({ max: cfg.AUTH_FAILURE_MAX, windowMs });
+
   fastify.decorateRequest('callerRole', undefined);
 
-  fastify.addHook('onRequest', async (req: FastifyRequest) => {
-    // Check x-api-key or Authorization Bearer header
-    const headerKey = req.headers['x-api-key'];
-    let apiKey: string | undefined;
+  fastify.addHook('onRequest', async (req: FastifyRequest, reply: FastifyReply) => {
+    if (req.url === '/health' || req.method === 'OPTIONS') return;
 
-    if (typeof headerKey === 'string') {
-      apiKey = headerKey;
-    } else if (req.headers.authorization?.startsWith('Bearer ')) {
-      apiKey = req.headers.authorization.slice(7).trim();
+    const client = `ip:${req.ip}`;
+    const apiKey = presentedKey(req);
+
+    // A client that keeps presenting invalid keys is refused before any further key is
+    // evaluated, so guesses cannot continue at full speed during the lockout window.
+    if (apiKey !== undefined && failureLimiter.isBlocked(client)) {
+      return tooManyRequests(reply, failureLimiter.retryAfterSeconds(client));
     }
 
-    if (apiKey) req.callerRole = keyToRoleMap.get(apiKey);
+    const resolved = apiKey !== undefined ? keyRing.resolve(apiKey) : undefined;
+    if (apiKey !== undefined && !resolved) {
+      const failure = failureLimiter.hit(client);
+      // Never log the presented value: it may be a real key with a typo.
+      req.log.warn({ event: 'AUTH_INVALID_KEY', lockedOut: failureLimiter.isBlocked(client) }, 'Rejected invalid API key');
+      if (!failure.allowed) return tooManyRequests(reply, failure.retryAfterSeconds);
+    }
+
+    const budget = requestLimiter.hit(resolved ? `key:${resolved.fingerprint}` : client);
+    if (!budget.allowed) return tooManyRequests(reply, budget.retryAfterSeconds);
+
+    if (resolved) req.callerRole = resolved.role;
   });
 };
 
