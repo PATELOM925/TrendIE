@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-11-15 — GOAT authority V1 hardening
+
+- Claim compares the request proposal with the persisted, signed proposal and recomputes the
+  shared V1 fingerprint. It checks the approval HMAC, intent owner, version, expiry and uses
+  before any write. Consume, use decrement, execution insert and audit happen in one transaction.
+- The owner comes from the server-configured key binding (`API_KEY_*_OWNER_ID`), not from the request.
+- Spend authorization is server-recorded (`GOAT_SPEND_AUTHORIZATION_ID`, `GOAT_SPEND_CEILING_WEI`).
+  The default ceiling of 0 blocks every claim. Optional `GOAT_DAILY_LIMIT_WEI` adds a rolling
+  24-hour limit per owner; pending and unknown payments count as spent.
+- Checkpoint and outcome routes never create an execution. The first transaction hash is immutable,
+  phases cannot go back, and terminal outcomes cannot change. Exact retries are idempotent.
+- Added read-only recovery `GET /v1/goat/approvals/:approvalReference/execution` with a nullable checkpoint.
+- The four probe cases in `docs/evidence/2026-11-15-goat-authority-fcd8df6.md` are now regression
+  tests with safe results (`gateway/test/goat-authority-v1.test.ts`). Offline mocks only: PostgreSQL
+  locking, concurrency and rollback are not verified. Qatom authority, history owner scoping and
+  frontend gateway wiring remain open.
+
 ## Unreleased
 
 - Record Om-directed temporary cross-owner implementation coordination (2026-11-15); original
