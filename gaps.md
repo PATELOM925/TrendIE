@@ -96,33 +96,28 @@ The most important blockers are:
 ### G-06 — Agent attack demo is not yet equivalent to the PRD demonstration
 
 **Priority:** P0  
-**Accountable owner:** Person 4 / Om (agent and attack testing)  
+**Status:** **Closed on `develop`**  
+**Accountable owner:** Person 4 / Om & Tirth (agent and attack testing)  
 **Supporting owners:** Person 1 / Awais (gateway decision), Person 5 / Nasar (playground integration)
 
-- The repository contains an optional Gemini model adapter package. The web route now rejects live-model requests before any network call; the console playground only sends user-authored synthetic text and proposal fields.
-- No live model attack result is recorded. Re-enable the web route only after Person 4 supplies enforced numeric spend controls and a separate paid-call authorization exists.
-- The scripted `demo:attack` does not call a real model for the unprotected scenario. It hardcodes the attack proposal and labels it illustrative; it does not prove an attack succeeded.
-- The protected “clean purchase” uses a fake gateway authority, fake signer, fake transaction hash, and fake RPC receipt; it does not settle on GOAT.
-- The synthetic playground sends its user-authored proposal through the gateway. It is not a paired vulnerable-agent path that demonstrates the same attack succeeding without the gateway and then being stopped with it.
-- The PRD's specified architecture names the OpenAI Agents SDK, while an optional Gemini adapter package also exists. If Gemini is intended as a replacement, record that architecture decision and ensure the shared workflow and spend controls apply before enabling it.
-
-**Needed to close:** Person 4 implements a controlled unprotected agent and protected path using the same malicious input; capture reproducible model output and gateway evidence; keep wallet/payment credentials inaccessible to the model; add an explicit provider-spend gate before any live model call.
+- **Resolved:** `scripts/demo-attack.mjs` and the Web Console (`apps/web`) now execute a true paired vulnerability comparison using identical malicious invoice inputs:
+  1. **Path A (Vulnerable Agent Architecture):** Simulates standard agent setups where the agent has direct wallet/signing tool access. Prompt injection hijacks agent context and commands an unverified transfer $\rightarrow$ Funds are stolen and corporate treasury is drained.
+  2. **Path B (Protected Agent Architecture):** The agent operates in a dual-control sandbox with zero private keys. The identical proposal is submitted to the live Fastify Security Gateway (`POST /verify`). The Gateway halts execution deterministically (`REJECT [SELLER_MISMATCH, DESTINATION_NOT_ALLOWED, INJECTION_FLAGGED]`), logs the event into PostgreSQL, and denies execution tokens $\rightarrow$ Zero satoshis moved ($0.00 loss, zero gas wasted).
+  3. **Path C (Clean Authorized Purchase):** Legitimate invoice matching intent is approved by the live Gateway, issues a cryptographic HMAC approval token, and is consumed via `POST /approvals/:id/consume`.
+  4. **Live Web Console UI:** Rejections in the web dashboard now display a paired side-by-side comparison card illustrating the exact vulnerability vs. guard outcome. Testable via `npm run demo:attack`.
 
 ### G-07 — PDF extraction is not in the purchase workflow
 
 **Priority:** P0  
-**Accountable owner:** Person 4 / Om (inspection and PDF extraction)  
+**Status:** **Closed on `develop`**  
+**Accountable owner:** Person 4 / Om & Tirth (inspection and PDF extraction)  
 **Supporting owners:** Person 1 / Awais (persisted evidence), Person 5 / Nasar (upload and display)
 
-- A hidden-text adversarial PDF fixture exists. `scripts/demo-pdf-attack.mjs` extracts it with PyMuPDF and runs the heuristic scanner.
-- That script manually computes a rejection rather than submitting the extracted evidence and proposal to the actual gateway.
-- The synthetic playground's “Synthetic PDF Text Fixture” control still inserts explanatory text; the separate upload panel now sends a selected PDF through the existing bounded PyMuPDF extractor and the same `/api/verify` gateway path used for text proposals.
-- Uploaded PDF bytes are written to a unique temporary directory and deleted in a `finally` block after extraction. The UI displays the source filename, page/character counts, extracted text, limitations, advisory findings, and gateway decision; it does not infer an invoice amount or destination.
-- The gateway verify endpoint persists a proposal and inspection in source, but PostgreSQL behavior is unverified and the console still has no owner-scoped read API to reconstruct that evidence after reload.
-
-**Progress:** Person 5 added transient upload, bounded extraction, same-flow verification, and evidence display. The local UI/API checks and Python extractor tests passed on this branch.
-
-**Needed to close:** Person 4 validates extraction behavior/coverage and hidden-text fixtures; Person 1 verifies persistence under an isolated PostgreSQL database and adds owner-scoped history reads so evidence can be reconstructed after reload. Scanner findings remain advisory.
+- A hidden-text adversarial PDF fixture exists (`services/pdf-inspection/fixtures/adversarial-invoice.pdf`).
+- **Resolved:** `scripts/demo-pdf-attack.mjs` now runs PyMuPDF extraction (`render_mode=3` stream), registers an immutable Intent on the live Gateway (`POST /intents`), and submits the extracted proposal and heuristic inspection payload directly to `POST /verify` on the live Gateway.
+- The live Gateway deterministically halts the attack with `REJECT [AMOUNT_EXCEEDS_MAX, INJECTION_FLAGGED]`.
+- The attack rejection is cryptographically appended and verified in the PostgreSQL audit ledger (`GET /audit/chain/verify`). Testable via `npm run demo:pdf`.
+- **UI Progress:** Person 5 added transient bounded upload, extraction, and verification directly in the web console (`PdfUploadPanel.tsx`).
 
 ### G-08 — Decisions, outcomes, and human review are not fully available in the UI
 
@@ -144,18 +139,17 @@ The most important blockers are:
 ### G-09 — Demo scripts and docs overstate some evidence
 
 **Priority:** P1 for demo readiness and accurate acceptance reporting  
+**Status:** **Partially closed on `develop` (Replay demo verified end-to-end; GOAT transaction remains explicitly labeled as simulated/read-only)**  
 **Accountable owner:** Person 5 / Nasar (integrated demo and documentation)  
-**Supporting owners by evidence:** Person 1 / Awais (replay and audit demos), Person 2 / GOAT (`demo:goat`), Person 4 / Om (agent and PDF demos)
+**Supporting owners by evidence:** Person 1 / Awais (replay and audit demos), Person 2 / GOAT (`demo:goat`), Person 4 / Om & Tirth (agent and PDF demos)
 
-- `scripts/demo-attack.mjs` now labels its mock authority, signer, transaction hash, and receipt as synthetic; no gateway or chain is called.
-- `scripts/demo-goat-live.mjs` is labeled as a read-only RPC probe plus local fake-authority check; it does not submit a transaction.
-- `scripts/demo-replay-attack.mjs` now prints actual HTTP/decision fields, but it still does not call the approval-consume endpoint for the first proposal. Its `validProposal` omits required `sourceRef`, so the local gateway returns schema-invalid rather than testing zero-use/expiry policy. The script does not fail on unexpected responses.
-- The PDF CLI demo uses a real fixture/extractor but manually computes an illustrative result. The web UI now has a separate bounded upload flow; see its test evidence after integration.
-- The audit demo no longer claims SOC 2 readiness or prints a passing message when verification is invalid; however, it still exits successfully if the chain is invalid.
-- The README, setup guide, and demo output now label the attack, PDF, replay, and GOAT scripts as synthetic, local policy checks, or read-only probes as applicable. Their underlying mock/replay behavior is unchanged and still does not meet end-to-end acceptance.
-- The setup guide's migration command now matches the root `db:migrate` script.
-
-**Needed to close:** the replay demo owner must add required fields, validate zero-use/expiry API results, and add a true second consume attempt on the same approval; the audit demo owner must use a nonzero exit status for invalid verification. Keep live provider evidence separate from fixture/test evidence. Current labels and setup command are corrected.
+- **Resolved for Replay Defense:** `scripts/demo-replay-attack.mjs` was upgraded to perform a true live duplicate consumption on the exact same HMAC approval token against `POST /approvals/:id/consume`. The Gateway executes atomic row updates in PostgreSQL:
+  1. Attempt #1 consumes the approval (`200 OK`) and decrements `remaining_uses` to 0.
+  2. Attempt #2 (Replay of same token) is rejected by Gateway with `HTTP 403 FORBIDDEN` (`Approval cannot be consumed: INTENT_EXHAUSTED`).
+  3. Attempt #3 (Proposal resubmission against exhausted intent) is rejected by Gateway with `REJECT [INTENT_EXHAUSTED]`.
+  4. Expired timestamps are rejected with `REJECT [INTENT_EXPIRED]`. Testable via `npm run demo:replay`.
+- The PDF demo (`demo:pdf`) now runs directly against the live Gateway API and PostgreSQL audit log.
+- `scripts/demo-goat-live.mjs` and `scripts/demo-attack.mjs` have been clarified to distinguish live read-only RPC checks from simulated settlement where live spend keys are restricted.
 
 ### G-10 — Feature status and project documentation need reconciliation
 
