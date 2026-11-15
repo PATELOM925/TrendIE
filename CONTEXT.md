@@ -13,7 +13,9 @@ The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` an
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
 The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
 integration. No Tirth branch was visible at the latest remote inspection. Nassar's local frontend
-implementation is on `nasar-frontend` and has not been merged or independently accepted.
+implementation was included in `develop` at `497db86`; the current `nasar-frontend` branch adds
+Person 5 implementation and ownership/acceptance updates above that base. Current Person 5 work is
+recorded below and does not imply project-stage acceptance.
 
 The authorized workflow is contributor PRs into `develop` for combined checks and previews, then
 an independently approved production PR to `main`. The owner has authorized this agent to merge
@@ -22,13 +24,23 @@ write production under this authorization. See [the plan](docs/plan.md).
 
 ## Implementation and integration evidence
 
+### Person 5 implementation update
+
+The local playground now rejects live Gemini requests before gateway access and the UI labels its
+playground as synthetic. Demo output and setup docs distinguish mock adapter results, local policy
+checks, read-only RPC probes, and actual provider evidence. The authorization form states its
+USDC/USDT six-decimal demo limit; shared platform contract alignment remains open because the
+contracts are still proposed. PDF upload/extraction status and current checks are recorded in the
+latest Person 5 handoff section. The console still lacks persisted decision/evidence/outcome history
+and a review queue because the gateway does not expose the required owner-scoped read APIs.
+
 | Slice | Evidence at pinned head | Still needed |
 |---|---|---|
 | Person 1 / Awais gateway | Merged Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes and offline checks. Final local source passed 73 gateway tests; real SQL behavior remains unverified. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
 | Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
 | Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
 | Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
-| Person 5 / Nassar | Local Next.js Guard Console and server-side gateway routes are implemented on `nasar-frontend`; synthetic proposal decisions use the local gateway, and the existing text scanner is called server-side. | Persisted proposal/evidence audit reconstruction, PDF upload/extraction UI, receipt integration, owner authentication, and end-to-end database verification remain open. |
+| Person 5 / Nassar | Local Next.js Guard Console includes intent registration, synthetic proposal verification, live-model rejection, and transient bounded PDF extraction/verification. The UI uses only the local demo owner. | Owner-scoped persisted decision/evidence/outcome history, an authenticated review queue, provider receipts, shared cross-platform contract alignment, and end-to-end PostgreSQL verification remain open. |
 
 The [integration matrix](docs/integration.md) separates the original reviewed defects from current
 mitigations. Both legacy adapter HTTP authorities now deny claims and refuse writes before network
@@ -42,13 +54,13 @@ their audit entries. Local configuration uses loopback and an explicit CORS allo
 service keys. Owner-scoped authentication, the complete shared proposal/approval contract and durable
 adapter checkpoint/continuation endpoints remain open. Outcome integrity is implemented in the candidate with consumed-platform binding, checked state transitions and transactional write/audit regression coverage; it remains subject to re-review.
 
-Stages 1–3 are not complete: the Person 5 frontend now covers local scaffolding, intent/proposal
-screens, gateway decisions, and session evidence, but owner approval, aligned contracts, combined
-local Postgres endpoint tests, model-based attack evidence, a GOAT receipt and authenticated Qatom
-checkout remain outstanding. The frontend does not yet upload/extract PDF invoices or reconstruct
-persisted proposal evidence after reload. Stage 4 security comparisons and Stage 5 demo verification
-remain; Stage 6 escrow is optional stretch work. Merging to `develop` alone completes none of these
-acceptance gates.
+Stages 1–3 are not complete: the Person 5 frontend covers local scaffolding, intent/proposal screens,
+gateway decisions, session evidence, and transient bounded PDF extraction and verification. Owner
+approval, aligned contracts, combined local Postgres endpoint tests, model-based attack evidence, a
+GOAT receipt and authenticated Qatom checkout remain outstanding. The frontend cannot reload
+persisted proposal evidence or provide owner-scoped history/review controls without gateway APIs.
+Stage 4 security comparisons and Stage 5 demo verification remain; Stage 6 escrow is optional
+stretch work. Merging to `develop` alone completes none of these acceptance gates.
 
 ## Setup and live boundaries
 
@@ -65,13 +77,11 @@ remains zero by default (Q003).
 
 ## Current local checks
 
-On the current `nasar-frontend` working tree, the Next.js web workspace and server-side BFF passed
-`npm run web:build`, `npm run typecheck`, `npm run lint`, and `npm test` (79 tests) on Node 22.20.0.
-The independent frontend review found no remaining blockers for this local slice. These checks use
-local source and mocked HTTP responses; no gateway database, migration, provider, payment adapter,
-wallet, or chain was exercised. `npm ci --ignore-scripts` reported two high-severity dependency
-findings; see the dependency audit before any external use. The frontend has not been run against a
-configured gateway/PostgreSQL instance or visually reviewed in a browser.
+The latest completed checks for this Person 5 branch are recorded in [team handoff](docs/team-handoff.md).
+They use local source and mocked HTTP responses; no gateway database, migration, provider, payment
+adapter, wallet, or chain was exercised. `npm ci --ignore-scripts` reported two high-severity
+dependency findings; see the dependency audit before any external use. The frontend has not been
+run against a configured gateway/PostgreSQL instance or visually reviewed in a browser.
 
 The earlier combined runtime source at `6ba9fcc4334f2eea5eeb0209311e6d8f9fb5ee99` passed root
 typecheck, lint, build and 65 tests; separate gateway typecheck, lint, build and 60 offline tests;

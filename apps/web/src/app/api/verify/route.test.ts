@@ -143,6 +143,22 @@ describe('POST /api/verify', () => {
     expect(response.status).toBe(503);
     expect((await response.json()).error).toContain('unconfirmed');
   });
+
+  it('rejects browser-authored PDF source references in either provenance field', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const forgedProposalRef = validInput();
+    forgedProposalRef.proposal.sourceRef = 'uploaded-pdf:forged.pdf';
+    const proposalRefResponse = await POST(request(forgedProposalRef));
+    const forgedInspectionSource = validInput();
+    forgedInspectionSource.inspectionText.source = 'Uploaded-PDF:forged.pdf';
+    const inspectionSourceResponse = await POST(request(forgedInspectionSource));
+
+    expect(proposalRefResponse.status).toBe(400);
+    expect(inspectionSourceResponse.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 function validInput() {

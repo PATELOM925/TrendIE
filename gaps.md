@@ -30,7 +30,7 @@ The most important blockers are:
 - `packages/contracts` defines a versioned proposal with `ownerId`, `intentVersion`, `platform`, `itemId`, `sellerId`, scaled integer `money`, `asset`, `chain`, and `providerArgs`.
 - The gateway and web BFF still use a legacy proposal shape: `intentId`, seller, product, amount, currency, destination, and source reference.
 - The intent and approval API does not yet expose the same versioned, provider-specific binding expected by QPE adapters.
-- The web UI supports only USDC/USDT with six decimal places. Qatom uses USD-TDN with scale 3; GOAT native transfers use a different asset and scale. The UI cannot currently register the platform-specific intents required by both integrations.
+- The web UI supports only demo USDC/USDT with six decimal places and now states this limitation in the authorization form. Qatom uses USD-TDN with scale 3; GOAT native transfers use a different asset and scale. The UI cannot currently register the platform-specific intents required by both integrations.
 - Approval, execution result, continuation, checkpoint, and reconciliation contracts still differ between gateway routes and the GOAT/Qatom authority ports.
 
 **Needed to close:** agree and version one intent/proposal/approval/result contract; add compatibility tests across the gateway, frontend BFF, agent, and adapters; remove legacy coercions and unsupported placeholder mappings.
@@ -45,7 +45,7 @@ The most important blockers are:
 - In the reviewed environment, Docker Desktop's engine was unavailable and no PostgreSQL Windows service was found. No local database was confirmed running.
 - No current-revision migrations, gateway endpoint integration tests, or frontend-to-database flow were run.
 - Gateway tests require an explicitly isolated PostgreSQL test database. Existing fixtures truncate the audit log, which conflicts with the audit protections; a safe reset strategy is still required before running the database suite.
-- `docs/team-setup-guide.md` references `npm run gateway:db:migrate`, but the root script is `db:migrate`.
+- `docs/team-setup-guide.md` now references the root `npm run db:migrate` script. PostgreSQL itself remains unverified here.
 
 **Needed to close:** start a disposable local PostgreSQL instance; fix the fixture reset conflict; run migrations and seed only against that disposable instance; execute gateway and frontend endpoint tests and record the exact revision/results.
 
@@ -109,7 +109,7 @@ The most important blockers are:
 ### G-07 — PDF extraction is not in the purchase workflow
 
 **Priority:** P0  
-**Status:** **Closed on `develop` (Commit 9cee95d)**  
+**Status:** **Closed on `develop`**  
 **Accountable owner:** Person 4 / Om & Tirth (inspection and PDF extraction)  
 **Supporting owners:** Person 1 / Awais (persisted evidence), Person 5 / Nasar (upload and display)
 
@@ -117,6 +117,7 @@ The most important blockers are:
 - **Resolved:** `scripts/demo-pdf-attack.mjs` now runs PyMuPDF extraction (`render_mode=3` stream), registers an immutable Intent on the live Gateway (`POST /intents`), and submits the extracted proposal and heuristic inspection payload directly to `POST /verify` on the live Gateway.
 - The live Gateway deterministically halts the attack with `REJECT [AMOUNT_EXCEEDS_MAX, INJECTION_FLAGGED]`.
 - The attack rejection is cryptographically appended and verified in the PostgreSQL audit ledger (`GET /audit/chain/verify`). Testable via `npm run demo:pdf`.
+- **UI Progress:** Person 5 added transient bounded upload, extraction, and verification directly in the web console (`PdfUploadPanel.tsx`).
 
 ### G-08 — Decisions, outcomes, and human review are not fully available in the UI
 
@@ -128,10 +129,12 @@ The most important blockers are:
 - A verification decision is displayed as **not executed**; the UI does not consume approval or call an adapter.
 - Session decisions are lost on reload. The persisted audit view currently focuses on intent-created events; it does not reconstruct proposal, inspection, decision, and execution records as a coherent history.
 - The audit-chain verification endpoint/UI can check chain integrity, but that is not a transaction history or proof that every required outcome is present.
-- Gateway review-resolution API exists, but the console has no review queue or approval/rejection controls for an authorized human.
+- A gateway review-resolution POST exists for dashboard/admin service roles, but it does not establish an authenticated reviewer identity or owner-scoped review queue; the console has no review controls.
 - Payment states such as `submitting`, `pending`, `pending_approval`, `succeeded`, `failed`, and `unknown`, plus provider receipts/references, are not presented as a connected lifecycle in the console.
+- Person 5's UI now labels current decisions as session-only and explains that persisted proposal, inspection, review, and payment history is unavailable. `/audit` events do not carry a usable intent binding for verified decisions, and the gateway has no owner-scoped review-list or decision/proposal/evidence history endpoint. The existing review-resolution POST is not enough to build a safe queue.
+- The audit badge now describes hash-chain integrity only; it does not claim all decisions are visible or that a payment settled.
 
-**Needed to close:** add owner-scoped persisted history and review routes; show proposal, intent, decision reasons, inspection evidence, execution status and checked receipt; represent `unknown` and pending states without converting them to success or failure; add authorized review controls and prove unresolved proposals cannot execute.
+**Needed to close:** Person 1 adds owner-scoped persisted history and review-list/read APIs with approved fields and authenticated reviewer identity; provider owners expose checked execution status and receipt facts. Person 5 can then display proposal, intent, reasons, inspection evidence, execution status and receipt, distinguish `unknown` and pending, and add reviewer controls. Prove unresolved proposals cannot execute.
 
 ### G-09 — Demo scripts and docs overstate some evidence
 
@@ -154,12 +157,14 @@ The most important blockers are:
 **Accountable owner:** Person 5 / Nasar (plan, feature list, and handoff consistency)  
 **Supporting owners:** each feature owner validates the evidence for their feature; Om owns the main-branch release gate
 
-- `feature_list.json` marks F-001–F-010 and F-013 `implemented`, despite the acceptance gaps in this document. F-011 and F-012 are `not_started`.
+- **Historical finding from the initial gap review:** `feature_list.json` marked F-001–F-010 and F-013 `implemented`, despite the acceptance gaps in this document; F-011 and F-012 were `not_started`. The current status legend and evidence-based rows are documented in the progress note below.
 - `CONTEXT.md` and parts of `docs/team-handoff.md` still describe the frontend as unmerged or ask for a PR into develop, even though the frontend commits are ancestors of the current develop head.
 - `docs/integration.md` retains earlier pinned-source language and should be refreshed to distinguish newly added active-mode GOAT HTTP code from verified trusted gateway integration.
 - The root README's test count and current demo claims have not been verified on `497db86`.
 
-**Needed to close:** use evidence-based states such as `partial`, `blocked`, or `verified` (if the schema is extended); update branch/merge facts; preserve explicit limits of source tests, mocked demos, database tests, and provider evidence.
+**Progress:** `feature_list.json` now defines `verified`, `partial`, `blocked`, and `not_started` and no longer marks incomplete P0/P1 features as implemented. See status notes for remaining component-owner validation.
+
+**Needed to close:** feature owners validate their rows against current evidence; update branch/merge facts after integration; preserve explicit limits of source tests, mocked demos, database tests, and provider evidence.
 
 ## PRD acceptance still outstanding
 

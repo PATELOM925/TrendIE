@@ -9,8 +9,9 @@ const cyan = (s) => `\x1b[36m${s}\x1b[0m`;
 const yellow = (s) => `\x1b[33m${s}\x1b[0m`;
 
 console.log(bold('\n============================================================='));
-console.log(bold('  AGENTIC PAYMENT GUARD — GOAT TESTNET3 LIVE BRIDGE DEMO    '));
+console.log(bold('  AGENTIC PAYMENT GUARD — GOAT READ-ONLY RPC PROBE           '));
 console.log(bold('=============================================================\n'));
+console.log(yellow('Read-only chain queries plus a fake local authority/signer fixture. No transaction is submitted.\n'));
 
 const client = createPublicClient({
   transport: http(GOAT_TESTNET_RPC_URL),
@@ -28,15 +29,15 @@ const testKey = process.env.GOAT_PRIVATE_KEY || generatePrivateKey();
 const account = privateKeyToAccount(testKey);
 const balance = await client.getBalance({ address: account.address });
 
-console.log(cyan('2. Active GOAT Agent Wallet:'));
+console.log(cyan('2. Address used for a read-only balance query:'));
 console.log(`   Address:  ${bold(account.address)}`);
 console.log(`   Balance:  ${balance.toString()} wei (native BTC on GOAT Testnet)`);
 if (!process.env.GOAT_PRIVATE_KEY) {
   console.log(yellow('   Notice:   Using ephemeral testnet key (Set GOAT_PRIVATE_KEY in .env to persist).\n'));
 }
 
-console.log(cyan('3. Simulating Attack vs Defense on GOAT Testnet Bridge:'));
-console.log('   Scenario: Autonomous agent tricked into redirecting funds to attacker wallet.');
+console.log(cyan('3. Local fake-authority adapter check (not a live payment):'));
+console.log('   The fake signer throws if called; this does not exercise gateway authorization or settlement.');
 
 const fakeAuthority = {
   async claimExecution({ proposal }) {
@@ -119,8 +120,8 @@ const attackResult = await adapter.execute({
 console.log(`   Attacker destination: ${maliciousProposal.providerArgs.recipient}`);
 console.log(`   Payment Guard Result: ${red(attackResult.status.toUpperCase())}`);
 console.log(`   Halt Reason:          ${attackResult.reason}`);
-console.log(green('   ✓ Fund drain prevented: Zero transactions broadcast to GOAT Testnet!\n'));
+console.log(green('   ✓ Fake authority denied the fixture proposal. No transaction was submitted.\n'));
 
 console.log(bold('============================================================='));
-console.log(green('  GOAT TESTNET3 LIVE BRIDGE DEMONSTRATION COMPLETE           '));
+console.log(green('  READ-ONLY RPC PROBE AND LOCAL MOCK CHECK COMPLETE          '));
 console.log(bold('=============================================================\n'));

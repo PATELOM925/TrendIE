@@ -1,6 +1,6 @@
 # Team Local Setup Guide: Agentic Payment Guard
 
-Follow this step-by-step runbook to set up the local PostgreSQL database, Fastify Security Gateway, Next.js Web Console, and live test bridges.
+Follow this runbook to set up local PostgreSQL, the Fastify gateway, and the Next.js console. The current demo scripts include synthetic fixtures and read-only probes; they do not demonstrate a completed provider payment.
 
 ---
 
@@ -10,6 +10,12 @@ Ensure you have installed:
 * **Node.js**: `>= 22` (`node --version`)
 * **pnpm**: `pnpm --version` (e.g. `pnpm@12.18.0` or `npm install -g pnpm`)
 * **Docker Desktop**: Running locally (for PostgreSQL)
+* **Python 3** with **PyMuPDF** for the console's bounded PDF text extraction
+
+Install the PDF dependency with `python -m pip install PyMuPDF` (Windows) or
+`python3 -m pip install PyMuPDF` (macOS/Linux). If the executable is not named `python` on Windows
+or `python3` elsewhere, set `PDF_PYTHON` in `apps/web/.env.local` to its full path. Restart the web
+server after changing this value.
 
 ---
 
@@ -82,8 +88,9 @@ GATEWAY_BASE_URL=http://127.0.0.1:3000
 API_KEY_DASHBOARD=dev-dashboard-key-3456
 API_KEY_AGENT=dev-agent-key-1234
 DEMO_OWNER_ID=user_enterprise_corp
-GEMINI_API_KEY=your-gemini-api-key-here
 ```
+
+Live Gemini calls are disabled in the console until a numeric spend limit is approved and enforced. Do not add a model key to this file for the current local demo.
 
 ---
 
@@ -93,7 +100,7 @@ Run the migration scripts to initialize the PostgreSQL schema and seed the basel
 
 ```bash
 # Apply schema migrations (001 and 002)
-npm run gateway:db:migrate
+npm run db:migrate
 
 # Seed demo intent (int_demo_01 for Supplier A)
 cd gateway && npx tsx src/db/seed.ts && cd ..
@@ -117,27 +124,29 @@ npm run web:dev
 # Logs: Ready in ~350ms, Local: http://127.0.0.1:3001
 ```
 
-Open your browser at **`http://localhost:3001`**. You should see:
+Open your browser at **`http://127.0.0.1:3001`**. This matches the loopback host used by the Next.js server and same-origin API checks. You should see:
 * The neutral status badge: `LOCAL SANDBOX · NO PAYMENTS`.
 * The seeded authorization: `Supplier A · Product A · 0.005 USDC (5 uses remaining)`.
-* Tabs for **`Preset Scenarios (7)`** and **`⚡ Live Attack Playground (Gemini AI 🤖)`**.
+* Tabs for **`Preset Scenarios (7)`** and **`Synthetic Playground`**. The playground does not call an external model.
 
 ---
 
 ## 7. Verification & Demos
 
-You can run all automated checks and live bridge demonstrations from the root directory:
+You can run local checks and the following labeled fixtures/read-only probes from the root directory:
 
 ```bash
-# 1. Run all workspace unit tests (89 tests across 18 suites)
+# 1. Run current workspace unit tests
 npm test
 
 # 2. Run TypeScript check across all packages
 npm run typecheck
 
-# 3. Run Track 3 Attack & Defense CLI Demonstration
+# 3. Run synthetic attack and mock adapter fixture (not live settlement)
 npm run demo:attack
 
-# 4. Run live GOAT Testnet3 Blockchain Bridge Demo
+# 4. Run read-only GOAT RPC probe and fake local adapter boundary
 npm run demo:goat
 ```
+
+The PDF script extracts a checked-in fixture and computes an illustrative local policy result; it does not call the gateway. The replay script's proposal fixture omits required `sourceRef`, so its requests currently return schema errors instead of proving zero-use or expiry handling; it also does not consume the same approval twice. The audit script reports an invalid chain but does not exit nonzero. See [the root README](../README.md) for current evidence limits. No demo above submits a payment.

@@ -8,8 +8,15 @@ import {
   RequestBodyError,
 } from '@/lib/gateway-server';
 import { inspectText } from '@trendie/inspection';
-import { createGeminiModel } from '@trendie/agent';
 import type { DecisionView, DemoCurrency, ProposalView } from '@/lib/types';
+
+const REASON_CODES = new Set([
+  'OK', 'INTENT_NOT_FOUND', 'INTENT_EXPIRED', 'INTENT_EXHAUSTED', 'SELLER_MISMATCH',
+  'PRODUCT_MISMATCH', 'AMOUNT_EXCEEDS_MAX', 'AMOUNT_INVALID', 'CURRENCY_MISMATCH',
+  'DESTINATION_NOT_ALLOWED', 'INJECTION_FLAGGED', 'SCHEMA_INVALID', 'INTERNAL_ERROR',
+]);
+
+const DECISIONS = new Set(['approve', 'reject', 'review']);
 
 export async function POST(request: Request): Promise<Response> {
   if (!isSameOriginJsonWrite(request)) {
@@ -28,20 +35,28 @@ export async function POST(request: Request): Promise<Response> {
     return jsonResponse({ error: 'Invalid agent request body.' }, 400);
   }
 
-  const intentId = typeof input.intentId === 'string' ? input.intentId.trim() : '';
-  const untrustedText = typeof input.untrustedText === 'string' ? input.untrustedText.trim() : '';
-  const seller = typeof input.seller === 'string' && input.seller.trim() ? input.seller.trim() : 'Supplier A';
-  const product = typeof input.product === 'string' && input.product.trim() ? input.product.trim() : 'Product A';
-  const amount = typeof input.amount === 'string' && /^\d+$/.test(input.amount.trim()) ? input.amount.trim() : '100';
-  const currency = (input.currency === 'USDT' ? 'USDT' : 'USDC') as DemoCurrency;
-  const destination = typeof input.destination === 'string' && input.destination.trim() ? input.destination.trim() : '0xSupplierA_Contract_or_Wallet_001';
-  const useLiveModel = Boolean(input.useLiveModel);
-
-  if (!intentId) {
-    return jsonResponse({ error: 'An intentId is required.' }, 400);
+  if (!hasOnlyKeys(input, ['intentId', 'untrustedText', 'seller', 'product', 'amount', 'currency', 'destination', 'useLiveModel'])) {
+    return jsonResponse({ error: 'Unknown agent request field.' }, 400);
   }
-  if (!untrustedText) {
-    return jsonResponse({ error: 'Untrusted text or prompt is required.' }, 400);
+  if (input.useLiveModel === true) {
+    return jsonResponse({ error: 'Live model calls are disabled until a separate numeric spend limit is approved and enforced.' }, 503);
+  }
+  if (input.useLiveModel !== undefined && input.useLiveModel !== false) {
+    return jsonResponse({ error: 'useLiveModel must be false.' }, 400);
+  }
+
+  const intentId = input.intentId;
+  const untrustedText = input.untrustedText;
+  const seller = input.seller;
+  const product = input.product;
+  const amount = input.amount;
+  const currency = input.currency;
+  const destination = input.destination;
+  if (!isBoundedString(intentId, 64) || !isBoundedString(untrustedText, 20_000) ||
+      !isBoundedString(seller, 256) || !isBoundedString(product, 256) ||
+      typeof amount !== 'string' || !/^\d{1,38}$/.test(amount) || BigInt(amount) <= 0n ||
+      (currency !== 'USDC' && currency !== 'USDT') || !isBoundedString(destination, 256)) {
+    return jsonResponse({ error: 'Invalid synthetic proposal request.' }, 400);
   }
 
   try {
@@ -54,73 +69,14 @@ export async function POST(request: Request): Promise<Response> {
       return jsonResponse({ error: 'Authorization does not belong to this local demo owner.' }, 404);
     }
 
-    let effectiveSeller = seller;
-    let effectiveAmount = amount;
-    let effectiveDestination = destination;
-    let effectiveCurrency = currency;
-    let agentModelName = 'custom-payload';
-
-    if (useLiveModel) {
-      const apiKey = process.env.GEMINI_API_KEY?.trim();
-      if (!apiKey) {
-        return jsonResponse({ error: 'GEMINI_API_KEY is not configured in .env.local.' }, 500);
-      }
-
-      agentModelName = 'gemini-3.5-flash';
-      const gemini = createGeminiModel({ apiKey, modelName: 'gemini-3.5-flash' });
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 20_000);
-
-      try {
-        const candidateListing = {
-          itemId: 'listing-custom-01',
-          sellerId: seller,
-          title: product,
-          amount,
-          scale: 6,
-          asset: currency,
-          description: `Payout destination: ${destination}. ${untrustedText}`,
-          sourceRef: 'user-playground-listing',
-        };
-
-        const rawProposal = await gemini.propose({
-          task: `Find and purchase ${product} from ${seller} within spending limits.`,
-          listings: [candidateListing],
-          signal: controller.signal,
-          maxTurns: 1,
-          maxToolCalls: 1,
-        }) as {
-          itemId: string;
-          sellerId: string;
-          money: { amount: string; scale: number };
-          asset: string;
-          providerArgs: Record<string, unknown>;
-        };
-
-        effectiveSeller = rawProposal.sellerId;
-        effectiveAmount = rawProposal.money.amount;
-        effectiveCurrency = (rawProposal.asset === 'USDT' ? 'USDT' : 'USDC') as DemoCurrency;
-        if (typeof rawProposal.providerArgs?.recipient === 'string') {
-          effectiveDestination = rawProposal.providerArgs.recipient;
-        }
-      } catch (err: unknown) {
-        clearTimeout(timeout);
-        return jsonResponse({
-          error: `Live Gemini agent execution failed: ${err instanceof Error ? err.message : String(err)}`,
-        }, 502);
-      } finally {
-        clearTimeout(timeout);
-      }
-    }
-
     const proposal: ProposalView = {
       intentId,
-      seller: effectiveSeller,
+      seller,
       product,
-      amount: effectiveAmount,
-      currency: effectiveCurrency,
-      destination: effectiveDestination,
-      sourceRef: useLiveModel ? 'live-gemini-agent-proposal' : 'custom-playground-proposal',
+      amount,
+      currency: currency as DemoCurrency,
+      destination,
+      sourceRef: 'custom-playground-proposal',
     };
 
     const scan = inspectText(untrustedText, 20_000, 30);
@@ -140,22 +96,22 @@ export async function POST(request: Request): Promise<Response> {
     };
 
     const result = await callGateway('agent', '/verify', { method: 'POST', body: forwarded });
-    if (!result.ok || !isRecord(result.data)) {
+    if (!result.ok || !isRecord(result.data) || !isDecisionResponse(result.data)) {
       return jsonResponse({ error: 'Gateway verification did not return a confirmed decision.' }, 502);
     }
 
     const decision: DecisionView = {
-      id: String(result.data.id ?? ''),
-      proposalHash: String(result.data.proposalHash ?? ''),
-      decision: result.data.decision as DecisionView['decision'],
-      reasonCodes: Array.isArray(result.data.reasonCodes) ? result.data.reasonCodes.map(String) : [],
-      timestamp: String(result.data.timestamp ?? new Date().toISOString()),
+      id: result.data.id,
+      proposalHash: result.data.proposalHash,
+      decision: result.data.decision,
+      reasonCodes: result.data.reasonCodes,
+      timestamp: result.data.timestamp,
     };
 
     return jsonResponse({
       decision,
       proposal,
-      agentType: agentModelName,
+      agentType: 'custom-payload',
       inspection: {
         source: 'playground',
         findings: scan.findings,
@@ -172,4 +128,34 @@ export async function POST(request: Request): Promise<Response> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function hasOnlyKeys(record: Record<string, unknown>, keys: string[]): boolean {
+  return Object.keys(record).every((key) => keys.includes(key));
+}
+
+function isDecisionResponse(value: Record<string, unknown>): value is Record<string, unknown> & {
+  id: string;
+  proposalHash: string;
+  decision: DecisionView['decision'];
+  reasonCodes: string[];
+  timestamp: string;
+} {
+  return isBoundedString(value.id, 128) && isBoundedString(value.proposalHash, 256) &&
+    typeof value.decision === 'string' && DECISIONS.has(value.decision) &&
+    Array.isArray(value.reasonCodes) && value.reasonCodes.length > 0 && value.reasonCodes.length <= REASON_CODES.size &&
+    value.reasonCodes.every((code) => typeof code === 'string' && REASON_CODES.has(code)) &&
+    isIsoTimestamp(value.timestamp);
+}
+
+function isBoundedString(value: unknown, maxLength: number): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= maxLength && value.trim() === value;
+}
+
+function isIsoTimestamp(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(value)) return false;
+  const parsed = Date.parse(value);
+  const fraction = value.match(/\.(\d{1,3})Z$/)?.[1] ?? '';
+  const canonical = `${value.slice(0, 19)}.${fraction.padEnd(3, '0')}Z`;
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === canonical;
 }
