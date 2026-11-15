@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Update current context against `origin/develop` `dbfac42`: frontend and Tirth security branch
+  exist; Q009 frontend availability is answered, with owner-scoped history/review and provider UI
+  still open. Record AAT PR #11's 35 agent tests across 6 files and 11 comparison cases, while both
+  clean/attack CLI results remain `NOT_SETTLED`, use synthetic policy, and provide no live LLM
+  provider proof. Distinguish the historical `9ffdba5` review from newer runtime. PR #10 authority
+  draft (`e0ad1ab`) has no recorded agreement; Awais was notified on WhatsApp. Keep the active
+  legacy GOAT bridge disabled pending full trusted binding; Qatom collector and GOAT replacement
+  remain in review/uncommitted externally and unmerged. Q003 remains zero; no stage completion.
+
 - Merge reviewed Om PRs #1–#3 and combined gateway PR #4 into develop. Final source 9ffdba5 is
   cleared for local/test integration only; main and production remain unchanged. Add the final
   team handoff, preserve remaining stage gates and track non-blocking audit follow-ups.

@@ -13,8 +13,8 @@ or provider payment is evidenced. See [team handoff](docs/team-handoff.md).
 The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
 The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
-integration. No Tirth branch was visible at the latest remote inspection. Nassar's frontend commits
-are included in `develop` at `9133094` and `main` at `0c08845`. Current Person 5 work is recorded
+integration. The current source snapshot has Tirth's `origin/tirth/security-integration` branch.
+Nassar's frontend commits are included in `develop` at `9133094` and `main` at `0c08845`. Current Person 5 work is recorded
 below and does not imply project-stage acceptance. The `codex/p5-mvp-status` documentation update
 is based on latest `origin/develop`.
 
@@ -40,14 +40,14 @@ and a review queue because the gateway does not expose the required owner-scoped
 | Person 1 / Awais gateway | Merged Fastify/Postgres gateway source includes policy, verify/consume, outcomes, audit/review routes and offline checks. Final local source passed 73 gateway tests; real SQL behavior remains unverified. | Contract alignment with QPE/GOAT, combined Postgres-backed tests against real local endpoints, auth/storage review and safe migration plan. |
 | Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
 | Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
-| Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
+| Person 4 / AAT, Om | PR #11 adds a controlled fixture harness: 35 agent tests across 6 files and 11 comparison cases. The clean and attack CLI runs both report `NOT_SETTLED`; the harness uses a synthetic policy, not the actual gateway. | CLI comparison is **NOT_SETTLED** for both clean and attack cases; no live LLM provider behavior is evidenced. Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons remain open. |
 | Person 5 / Nassar | Local Next.js Guard Console includes intent registration, synthetic proposal verification, live-model rejection, and transient bounded PDF extraction/verification. The UI uses only the local demo owner. | Owner-scoped persisted decision/evidence/outcome history, an authenticated review queue, provider receipts, shared cross-platform contract alignment, and end-to-end PostgreSQL verification remain open. |
 
 The [integration matrix](docs/integration.md) separates the original reviewed defects from current
-mitigations. Both legacy adapter HTTP authorities now deny claims and refuse writes before network
-access. They cannot fabricate a trusted binding, report an unsaved outcome as success or substitute
-an in-memory cache for durable recovery. This blocks unsafe execution; it does not implement the
-missing shared authority API.
+mitigations. The Qatom collector and GOAT replacement remain under review and are not merged.
+The newer `develop` source still contains an active legacy GOAT client; do not describe both bridges
+as currently fail-closed. Keep the active bridge disabled pending a complete trusted binding.
+Neither the in-review replacements nor the legacy path establish the missing shared authority API.
 
 The candidate gateway now compares identity strings exactly, caps approval expiry by intent expiry,
 revalidates human review, serializes audit append ordering and creates intents transactionally with
@@ -55,7 +55,7 @@ their audit entries. Local configuration uses loopback and an explicit CORS allo
 service keys. Owner-scoped authentication, the complete shared proposal/approval contract and durable
 adapter checkpoint/continuation endpoints remain open. Outcome integrity is implemented in the candidate with consumed-platform binding, checked state transitions and transactional write/audit regression coverage; it remains subject to re-review.
 
-Stages 1–3 are not complete: the Person 5 frontend covers local scaffolding, intent/proposal screens,
+Stages 1–3 are not complete: the Person 5 frontend exists and covers local scaffolding, intent/proposal screens,
 gateway decisions, session evidence, and transient bounded PDF extraction and verification. Owner
 approval, aligned contracts, combined local Postgres endpoint tests, model-based attack evidence, a
 GOAT receipt and authenticated Qatom checkout remain outstanding. The frontend cannot reload
