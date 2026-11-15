@@ -34,9 +34,44 @@ describe('HTTP GOAT gateway V1 authority', () => {
     const ack = { version: 1, kind: 'checkpoint_ack', status: 'persisted', executionId: input.executionId, phase: input.phase, txHash: input.txHash };
     await expect(authority(vi.fn().mockResolvedValue(stream(ack))).recordSubmissionCheckpoint(input)).resolves.toBeUndefined();
   });
+  it('accepts only owner scoped reconciliation with matching proposal binding and hash, using GET only', async () => {
+    const record = { version: 1, kind: 'reconciliation', executionId: 'exec-1', ownerId: 'user_1', proposal, binding, phase: 'broadcast', txHash: `0x${'a'.repeat(64)}` };
+    const fetchMock = vi.fn().mockResolvedValue(stream(record));
+    expect(await authority(fetchMock).getExecutionForReconciliation({ callerOwnerId: 'user_1', executionId: 'exec-1' })).toMatchObject({ executionId: 'exec-1', ownerId: 'user_1', phase: 'broadcast' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ method: 'GET' });
+    for (const altered of [{ ...record, ownerId: 'other' }, { ...record, binding: { ...binding, ownerId: 'other' } }, { ...record, binding: { ...binding, fingerprint: 'f'.repeat(64) } }, { ...record, txHash: 'bad' }]) {
+      expect(await authority(vi.fn().mockResolvedValue(stream(altered))).getExecutionForReconciliation({ callerOwnerId: 'user_1', executionId: 'exec-1' })).toBeUndefined();
+    }
+  });
+  it('accepts only exact persisted outcome acknowledgements and rejects non-2xx or malformed JSON', async () => {
+    const input = { executionId: 'exec-1', status: 'succeeded' as const, providerReference: `0x${'a'.repeat(64)}` };
+    const ack = { version: 1, kind: 'outcome_ack', status: 'persisted', executionId: input.executionId, resultStatus: input.status, providerReference: input.providerReference };
+    await expect(authority(vi.fn().mockResolvedValue(stream(ack))).recordOutcome(input)).resolves.toBeUndefined();
+    for (const altered of [{ ...ack, executionId: 'exec-2' }, { ...ack, resultStatus: 'unknown' }, { ...ack, providerReference: 'wrong' }]) await expect(authority(vi.fn().mockResolvedValue(stream(altered))).recordOutcome(input)).rejects.toThrow();
+    await expect(authority(vi.fn().mockResolvedValue(new Response('not json'))).recordOutcome(input)).rejects.toThrow();
+    await expect(authority(vi.fn().mockResolvedValue(new Response(JSON.stringify(ack), { status: 503 }))).recordOutcome(input)).rejects.toThrow();
+  });
+  it('rejects invalid base URLs before fetch', () => {
+    for (const baseUrl of ['https://user:pass@example.com', 'https://example.com?x=1', 'https://example.com/#x', 'http://example.com']) {
+      const fetchMock = vi.fn();
+      expect(() => createHttpGoatGatewayAuthority({ baseUrl, apiKey: 'test', mode: 'active', fetchFn: fetchMock })).toThrow(TypeError);
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  });
   it('rejects oversized and hung response bodies, bounds timeout options, and makes no default fetch', async () => {
     const oversized = new Response(new Uint8Array(64_001));
     expect((await authority(vi.fn().mockResolvedValue(oversized)).claimExecution(claimInput)).status).toBe('denied');
+    let cancelled = false;
+    const hungBody = new ReadableStream<Uint8Array>({
+      start(controller) { controller.enqueue(new TextEncoder().encode('{')); },
+      pull() { return new Promise<void>(() => undefined); },
+      cancel() { cancelled = true; return new Promise<void>(() => undefined); },
+    });
+    const started = Date.now();
+    expect((await authority(vi.fn().mockResolvedValue(new Response(hungBody)), 15).claimExecution(claimInput)).status).toBe('denied');
+    expect(Date.now() - started).toBeLessThan(250);
+    expect(cancelled).toBe(true);
     const hung = vi.fn().mockImplementation(() => new Promise(() => undefined));
     expect((await authority(hung, 10).claimExecution(claimInput)).status).toBe('denied');
     expect(() => authority(fetch, 0)).toThrow(RangeError);

@@ -25,6 +25,9 @@ export function createHttpGoatGatewayAuthority(options: HttpGoatGatewayClientOpt
     async getExecutionForReconciliation() { return undefined; },
   };
   if (options.mode !== 'active') return deny;
+  let parsedBase: URL;
+  try { parsedBase = new URL(options.baseUrl); } catch { throw new TypeError('Invalid GOAT gateway base URL'); }
+  if (!['http:', 'https:'].includes(parsedBase.protocol) || parsedBase.username || parsedBase.password || parsedBase.search || parsedBase.hash || (parsedBase.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(parsedBase.hostname))) throw new TypeError('Invalid GOAT gateway base URL');
   const base = options.baseUrl.replace(/\/$/, '');
   const fetcher = options.fetchFn ?? fetch;
   const timeoutMs = options.timeoutMs ?? 5000;
@@ -33,10 +36,12 @@ export function createHttpGoatGatewayAuthority(options: HttpGoatGatewayClientOpt
   const request = async (path: string, method: string, body?: unknown) => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
-    const deadline = new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('Gateway request timed out')); }, timeoutMs); });
+    let activeReader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+    const deadline = new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); if (activeReader) void activeReader.cancel().catch(() => undefined); reject(new Error('Gateway request timed out')); }, timeoutMs); });
     const operation = (async () => {
       const res = await fetcher(`${base}${path}`, { method, redirect: 'error', signal: controller.signal, headers: { 'Content-Type': 'application/json', 'x-api-key': options.apiKey }, ...(body === undefined ? {} : { body: canonicalJson(body) }) });
       const reader = res.body?.getReader();
+      activeReader = reader;
       if (!reader) return { res, data: undefined as unknown };
       const chunks: Uint8Array[] = []; let total = 0;
       try {
@@ -73,7 +78,7 @@ export function createHttpGoatGatewayAuthority(options: HttpGoatGatewayClientOpt
         const { res, data } = await request(`/v1/goat/approvals/${encodeURIComponent(input.approvalReference)}/claim`, 'POST', { version: 1, kind: 'claim', callerOwnerId: input.callerOwnerId, proposal, fingerprint: input.fingerprint, spendAuthorization: input.spendAuthorization });
         if (!res.ok || !strict(data, ['version','kind','status','executionId','proposal','binding']) || data.version !== 1 || data.kind !== 'claim' || data.status !== 'claimed' || !boundedId(data.executionId)) return { status: 'denied', reason: 'Gateway claim was not authoritative' };
         const serverProposal = parseProposal(data.proposal); const b = binding(data.binding);
-        if (!b || canonicalJson(serverProposal) !== canonicalJson(proposal) || proposalFingerprint(serverProposal) !== input.fingerprint || b.fingerprint !== input.fingerprint || b.ownerId !== input.callerOwnerId || b.ownerId !== serverProposal.ownerId || b.intentId !== serverProposal.intentId || b.intentId !== serverProposal.intentId || b.intentVersion !== serverProposal.intentVersion || b.platform !== serverProposal.platform || b.destination.toLowerCase() !== String(serverProposal.providerArgs.recipient).toLowerCase() || b.asset !== serverProposal.asset || b.scale !== serverProposal.money.scale || b.chainId !== GOAT_TESTNET_CHAIN_ID || b.amount !== serverProposal.money.amount || b.expiresAt <= input.now || b.spendAuthorizationId !== input.spendAuthorization.authorizationId || b.spendCeilingWei !== input.spendAuthorization.maxAmountWei || BigInt(serverProposal.money.amount) > BigInt(b.spendCeilingWei)) return { status: 'denied', reason: 'Gateway binding did not match the persisted proposal' };
+        if (!b || canonicalJson(serverProposal) !== canonicalJson(proposal) || proposalFingerprint(serverProposal) !== input.fingerprint || b.fingerprint !== input.fingerprint || b.ownerId !== input.callerOwnerId || b.ownerId !== serverProposal.ownerId || b.intentId !== serverProposal.intentId || b.intentVersion !== serverProposal.intentVersion || b.platform !== serverProposal.platform || b.destination.toLowerCase() !== String(serverProposal.providerArgs.recipient).toLowerCase() || b.asset !== serverProposal.asset || b.scale !== serverProposal.money.scale || b.chainId !== GOAT_TESTNET_CHAIN_ID || b.amount !== serverProposal.money.amount || b.expiresAt <= input.now || b.spendAuthorizationId !== input.spendAuthorization.authorizationId || b.spendCeilingWei !== input.spendAuthorization.maxAmountWei || BigInt(serverProposal.money.amount) > BigInt(b.spendCeilingWei)) return { status: 'denied', reason: 'Gateway binding did not match the persisted proposal' };
         return { status: 'claimed', executionId: data.executionId, binding: b };
       } catch { return { status: 'denied', reason: 'Gateway claim could not be verified' }; }
     },
