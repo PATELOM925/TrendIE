@@ -21,6 +21,29 @@ was attempted. This confirms the probe's observed unauthenticated response only.
 establish that checkout is unsupported or define its authenticated schema, price binding, or
 receipt guarantee. The docs update does not change runtime behavior.
 
+On 2026-11-15 at 09:27:49 UTC, an unauthenticated HTTPS `GET` to the MCP endpoint returned HTTP
+401 with `WWW-Authenticate: Bearer realm="TODAQ MCP"` and advertised
+[protected-resource metadata](https://mcp.m.todaq.net/.well-known/oauth-protected-resource). A
+direct GET of that metadata advertised resource `https://mcp.m.todaq.net`, authorization server
+`https://pay.m.todaq.net`, bearer header transport, scopes `openid`, `profile`, `email`, `twin`,
+`offline_access`, and documentation URL `https://docs.todaq.net/mcp`. Direct GET of the issuer's
+[authorization-server metadata](https://pay.m.todaq.net/.well-known/oauth-authorization-server)
+advertised issuer `https://pay.m.todaq.net`, `/v4/oidc/auth`, `/v4/oidc/token`, `/v4/oidc/reg`,
+and `/v4/oidc/jwks` endpoints; authorization-code response, authorization-code, refresh-token,
+and token-exchange grants; PKCE `S256`; and token endpoint auth methods `client_secret_basic`,
+`client_secret_post`, and `none`. This advertises OAuth with PKCE; it does not prove usable client
+registration, an approved redirect URI, required buyer scopes, effective token audience, successful
+login/consent, token issuance, or buyer access. The documentation URL was inaccessible to this
+review, so its contents are not claimed. No token request was received and no token was issued or
+tested. These metadata GETs made no auth/account writes and no paid calls.
+
+For setup, use an existing approved MCP client that supports OAuth PKCE, or request a
+provider-approved `client_id` and redirect URI. The user completes login and consent in that
+client. Do not invent a client ID, trigger dynamic registration/account creation, or call token
+exchange endpoints. Only after a valid token is supplied securely through the approved secret
+mechanism may it be placed in the probe process environment as `QATOM_MCP_TOKEN`. Never request
+or accept the token in chat, command arguments, repository files, terminal transcripts, or logs.
+
 ## Local checks
 
 From the repository root, with Node 22 and npm:
@@ -54,13 +77,13 @@ tool-inventory availability, and tool names. It does not print schemas, token va
 response bodies or call tools. No checkout tool is invoked. The 2026-11-15 result above is pinned
 to candidate `53215e8`; rerun the probe to establish evidence for a different candidate.
 
-Secure token request/entry through an approved secret mechanism has not been received. If the user
-provides a token through that mechanism, inject `QATOM_MCP_TOKEN` into the probe process environment.
+No secure token request/entry has been received. If a valid token is later provided through the
+approved secret mechanism, inject `QATOM_MCP_TOKEN` into the probe process environment.
 Do not request or accept the token in chat, or place it in this repository, command arguments,
-terminal transcripts or logs. Current implementation supports a server-provided Bearer
-token only; OAuth login, token refresh, scopes and buyer authorization remain unverified. If
-interactive auth is required, stop and document the supported flow before proceeding. Never
-automate OTP or account login.
+terminal transcripts or logs. Current implementation supports a server-provided Bearer token only;
+it does not implement OAuth login, refresh, scopes or buyer authorization. Metadata advertises
+PKCE OAuth but those capabilities remain unverified for a usable client and buyer session. Never
+automate OTP or account login. Atomic price/currency binding and receipt guarantee remain `unknown`.
 
 ## Live capability gates
 
