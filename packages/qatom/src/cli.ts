@@ -1,5 +1,6 @@
 import { createQatomClient } from './client.js';
 
+try { process.loadEnvFile?.('.env'); } catch {}
 const token = process.env.QATOM_MCP_TOKEN || process.env.QATOM_API_KEY;
 let close: (() => Promise<void>) | undefined;
 try {
