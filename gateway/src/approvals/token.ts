@@ -7,10 +7,34 @@ export interface ApprovalPayload {
   proposalHash: string;
   intentId: string;
   expiresAt: string;
+  ownerId?: string;
+  intentVersion?: string | number;
+  platform?: string;
+  chain?: string;
+  asset?: string;
+  scale?: number;
 }
 
 export function generateHmacSignature(payload: ApprovalPayload): string {
-  const content = `${payload.approvalId}|${payload.executionId}|${payload.proposalHash}|${payload.intentId}|${payload.expiresAt}|${config.APPROVAL_KEY_ID}`;
+  const parts = [
+    payload.approvalId,
+    payload.executionId,
+    payload.proposalHash,
+    payload.intentId,
+    payload.expiresAt,
+    config.APPROVAL_KEY_ID,
+  ];
+  if (payload.ownerId !== undefined) {
+    parts.push(
+      String(payload.ownerId),
+      String(payload.intentVersion ?? 1),
+      String(payload.platform ?? ''),
+      String(payload.chain ?? ''),
+      String(payload.asset ?? ''),
+      String(payload.scale ?? 0)
+    );
+  }
+  const content = parts.join('|');
   return createHmac('sha256', config.APPROVAL_HMAC_SECRET).update(content).digest('hex');
 }
 
@@ -21,11 +45,22 @@ export function generateHmacSignature(payload: ApprovalPayload): string {
 export function verifyHmacSignature(payload: ApprovalPayload, signature: string): boolean {
   if (typeof signature !== 'string' || !/^[0-9a-f]{64}$/.test(signature)) return false;
   const expected = generateHmacSignature(payload);
-  // Both hex strings are ASCII — same byte length. If lengths differ, fail fast.
-  if (expected.length !== signature.length) {
-    return false;
+  if (expected.length === signature.length && timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'))) {
+    return true;
   }
-  return timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'));
+  if (payload.ownerId !== undefined) {
+    const legacy = generateHmacSignature({
+      approvalId: payload.approvalId,
+      executionId: payload.executionId,
+      proposalHash: payload.proposalHash,
+      intentId: payload.intentId,
+      expiresAt: payload.expiresAt,
+    });
+    if (legacy.length === signature.length && timingSafeEqual(Buffer.from(legacy, 'utf8'), Buffer.from(signature, 'utf8'))) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function createApprovalId(): string {

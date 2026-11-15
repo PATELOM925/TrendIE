@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Implement Awais gateway shared authority, binding, and owner-scoped history endpoints:
+  - Add migration `003_shared_binding_and_authority.sql` for `intents` (`intent_version`, `platform`, `chain`, `asset`, `scale`, `sender`), `approvals` (`owner_id`, `intent_version`, `bound_platform`, `bound_asset`, `bound_chain`, `bound_scale`, `bound_sender`, `bound_destination`, `spend_authorization_id`, `spend_ceiling`), and `executions` (`checkpoint_phase`, `checkpoint_tx_hash`, `owner_id`).
+  - Implement `GET /approvals/:id` returning authoritative persisted binding with platform scoping and HMAC verification.
+  - Implement owner-scoped history APIs (`GET /history/decisions?owner=...`, `GET /history/executions?owner=...`, `GET /history/review-queue?owner=...`, `GET /intents?owner=...`).
+  - Implement GOAT Authority V1 endpoints (`POST /v1/goat/approvals/:approvalReference/claim`, `PUT /v1/goat/executions/:executionId/checkpoint`, `PUT /v1/goat/executions/:executionId/outcome`, `GET /v1/goat/executions/:executionId`).
+  - Add 13 unit tests in `gateway/test/authority-history.test.ts` (96 gateway unit tests, 114 root tests pass; all typecheck and lint clean).
+
 - Record `develop` at `9133094` (Node 22.23.4: 114 root tests, 83 gateway unit tests pass, plus
   typecheck and lint). This includes Tirth's paired attack comparison (G-06 closed), Nassar's
   transient PDF upload UI, replay/expiry live-Gateway-and-PostgreSQL demo (G-09 partial), PDF demo

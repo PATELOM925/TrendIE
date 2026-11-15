@@ -8,6 +8,8 @@ import { approvalRoutes } from './routes/approvals.js';
 import { executionRoutes } from './routes/executions.js';
 import { auditRoutes } from './routes/audit.js';
 import { reviewRoutes } from './routes/reviews.js';
+import { historyRoutes } from './routes/history.js';
+import { goatAuthorityRoutes } from './routes/goatAuthority.js';
 
 export async function buildServer(appConfig: Config = defaultConfig): Promise<FastifyInstance> {
   const app = Fastify({
@@ -37,6 +39,8 @@ export async function buildServer(appConfig: Config = defaultConfig): Promise<Fa
   await app.register(executionRoutes);
   await app.register(auditRoutes);
   await app.register(reviewRoutes);
+  await app.register(historyRoutes);
+  await app.register(goatAuthorityRoutes);
 
   return app;
 }

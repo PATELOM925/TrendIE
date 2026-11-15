@@ -27,8 +27,9 @@ export const intentRoutes: FastifyPluginAsync = async (fastify) => {
         await withTransaction(async (client) => {
           await client.query(
             `INSERT INTO intents (
-              id, owner, seller, product, max_amount, currency, allowed_destinations, expiry, remaining_uses, created_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+              id, owner, seller, product, max_amount, currency, allowed_destinations, expiry, remaining_uses, created_at,
+              intent_version, platform, chain, asset, scale, sender
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
             [
               intent.id,
               intent.owner,
@@ -40,6 +41,12 @@ export const intentRoutes: FastifyPluginAsync = async (fastify) => {
               intent.expiry,
               intent.remainingUses,
               intent.createdAt,
+              intent.intentVersion ?? 1,
+              intent.platform ?? null,
+              intent.chain ?? null,
+              intent.asset ?? null,
+              intent.scale ?? 0,
+              intent.sender ?? null,
             ]
           );
 
@@ -85,9 +92,15 @@ export const intentRoutes: FastifyPluginAsync = async (fastify) => {
         maxAmount: row.max_amount.toString(),
         currency: row.currency,
         allowedDestinations: row.allowed_destinations,
-        expiry: row.expiry.toISOString(),
+        expiry: row.expiry instanceof Date ? row.expiry.toISOString() : new Date(row.expiry).toISOString(),
         remainingUses: row.remaining_uses,
-        createdAt: row.created_at.toISOString(),
+        createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+        intentVersion: row.intent_version ?? 1,
+        platform: row.platform ?? null,
+        chain: row.chain ?? null,
+        asset: row.asset ?? null,
+        scale: row.scale ?? 0,
+        sender: row.sender ?? null,
       });
     }
   );

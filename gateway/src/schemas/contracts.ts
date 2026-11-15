@@ -11,6 +11,7 @@ export const CurrencySchema = z.enum([
   'GOAT',
   'ETH',
   'BTC',
+  'USD-TDN',
 ]);
 
 export const IntentSchema = z
@@ -25,6 +26,12 @@ export const IntentSchema = z
     expiry: z.string().datetime(),
     remainingUses: z.number().int().nonnegative().max(2147483647),
     createdAt: z.string().datetime(),
+    intentVersion: z.number().int().positive().optional().default(1),
+    platform: z.enum(['goat', 'qatom']).optional(),
+    chain: z.string().max(64).optional(),
+    asset: z.string().max(32).optional(),
+    scale: z.number().int().min(0).max(18).optional(),
+    sender: z.string().max(256).optional(),
   })
   .strict();
 
@@ -39,6 +46,16 @@ export const PurchaseProposalSchema = z
     currency: CurrencySchema,
     destination: z.string().min(1).max(256),
     sourceRef: z.string().min(1).max(256),
+    version: z.literal(1).optional(),
+    ownerId: z.string().min(1).max(256).optional(),
+    intentVersion: z.number().int().positive().optional(),
+    platform: z.enum(['goat', 'qatom']).optional(),
+    itemId: z.string().min(1).max(512).optional(),
+    sellerId: z.string().min(1).max(512).optional(),
+    money: z.object({ amount: z.string(), scale: z.number().int().min(0).max(255) }).optional(),
+    asset: z.string().min(1).max(64).optional(),
+    chain: z.string().min(1).max(128).optional(),
+    providerArgs: z.record(z.string().max(256), z.unknown()).optional(),
   })
   .strict();
 
@@ -67,6 +84,8 @@ export const ReasonCodeSchema = z.enum([
   'INTENT_NOT_FOUND',
   'INTENT_EXPIRED',
   'INTENT_EXHAUSTED',
+  'INTENT_VERSION_MISMATCH',
+  'PLATFORM_MISMATCH',
   'SELLER_MISMATCH',
   'PRODUCT_MISMATCH',
   'AMOUNT_EXCEEDS_MAX',

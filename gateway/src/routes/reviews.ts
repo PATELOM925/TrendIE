@@ -73,12 +73,22 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
           }
           const row = intentRes.rows[0];
           const intentParsed = IntentSchema.safeParse({
-            id: row.id, owner: row.owner, seller: row.seller, product: row.product,
-            maxAmount: row.max_amount.toString(), currency: row.currency,
+            id: row.id,
+            owner: row.owner,
+            seller: row.seller,
+            product: row.product,
+            maxAmount: row.max_amount.toString(),
+            currency: row.currency,
             allowedDestinations: row.allowed_destinations,
             expiry: row.expiry instanceof Date ? row.expiry.toISOString() : new Date(row.expiry).toISOString(),
             remainingUses: row.remaining_uses,
             createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : new Date(row.created_at).toISOString(),
+            intentVersion: row.intent_version ?? 1,
+            platform: row.platform ?? undefined,
+            chain: row.chain ?? undefined,
+            asset: row.asset ?? undefined,
+            scale: row.scale ?? undefined,
+            sender: row.sender ?? undefined,
           });
           const inspectionRes = await client.query('SELECT * FROM inspections WHERE proposal_id = $1', [proposalRow.id]);
           let inspection;
@@ -99,27 +109,52 @@ export const reviewRoutes: FastifyPluginAsync = async (fastify) => {
           const approvalId = createApprovalId();
           const executionId = createExecutionId();
           const expiresAt = capApprovalExpiry(now, config.APPROVAL_TTL_SECONDS, intentParsed.data.expiry);
+          const boundPlatform = intentParsed.data.platform ?? proposalParsed.data.platform ?? null;
+          const boundAsset = intentParsed.data.asset ?? proposalParsed.data.asset ?? intentParsed.data.currency;
+          const boundChain = intentParsed.data.chain ?? proposalParsed.data.chain ?? null;
+          const boundScale = intentParsed.data.scale ?? proposalParsed.data.money?.scale ?? 0;
+          const boundSender = intentParsed.data.sender ?? null;
+          const boundDestination = proposalParsed.data.destination;
+          const spendCeiling = intentParsed.data.maxAmount;
+
           const hmac = generateHmacSignature({
             approvalId,
             executionId,
             proposalHash: decision.proposal_hash,
             intentId: proposalRow.intent_id,
             expiresAt,
+            ownerId: intentParsed.data.owner,
+            intentVersion: intentParsed.data.intentVersion ?? 1,
+            platform: boundPlatform ?? undefined,
+            chain: boundChain ?? undefined,
+            asset: boundAsset,
+            scale: boundScale,
           });
 
           await client.query(
             `INSERT INTO approvals (
-              id, decision_id, intent_id, proposal_hash, execution_id, hmac_signature, key_id, expires_at
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+              id, decision_id, intent_id, proposal_hash, execution_id, hmac_signature, key_id, expires_at,
+              owner_id, intent_version, bound_platform, bound_asset, bound_chain, bound_scale,
+              bound_sender, bound_destination, spend_ceiling
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
             [
               approvalId,
               decisionId,
-            intentParsed.data.id,
+              intentParsed.data.id,
               decision.proposal_hash,
               executionId,
               hmac,
               config.APPROVAL_KEY_ID,
               expiresAt,
+              intentParsed.data.owner,
+              intentParsed.data.intentVersion ?? 1,
+              boundPlatform,
+              boundAsset,
+              boundChain,
+              boundScale,
+              boundSender,
+              boundDestination,
+              spendCeiling,
             ]
           );
 
