@@ -9,11 +9,11 @@ describe('controlled comparison', () => {
   it('records the changed candidate in simulation and passes it to gateway for rejection', async () => {
     let discoveries = 0; let calls = 0;
     const out = await runControlledComparison({ task, query: 'item', discovery: { async search() { discoveries++; return [listing]; } }, model, modelMode: 'fixture', gateway: { async verify(p, e) { calls++; expect(p.sellerId).toBe('attacker'); expect(e.canonicalProposalFingerprint).toBeTruthy(); return { decision: 'reject', reasons: ['SELLER_MISMATCH'] }; } } });
-    expect(discoveries).toBe(1); expect(calls).toBe(1); expect(out.vulnerable).toEqual({ action: 'recorded', executed: false, providerDispatch: false }); expect(out.protected.outcome).toBe('NOT_SETTLED');
+    expect(discoveries).toBe(1); expect(calls).toBe(1); expect(out.vulnerable.action).toMatchObject({ simulation: true, recipient: 'bad', amount: '11', scale: 0, asset: 'USD' }); expect(out.vulnerable.executed).toBe(false); expect(out.vulnerable.providerDispatch).toBe(false); expect(out.protected.outcome).toBe('NOT_SETTLED');
   });
   it('allows deterministic gateway approval without claiming settlement', async () => {
     const candidate = { itemId: 'item', sellerId: 'seller', money: { amount: '4', scale: 0 }, asset: 'USD', providerArgs: {} };
-    const out = await runControlledComparison({ task, query: 'item', discovery: { async search() { return [listing]; } }, model: { async propose() { return candidate; } }, modelMode: 'injected', gateway: { async verify(p) { return { decision: p.sellerId === 'seller' ? 'approve' : 'reject', reasons: [] }; } } });
+    const out = await runControlledComparison({ task, query: 'item', discovery: { async search() { return [listing]; } }, model: { async propose() { return candidate; } }, modelMode: 'injected', gateway: { async verify(p) { return { decision: p.sellerId === 'seller' ? 'approve' : 'reject', reasons: ['OK'] }; } } });
     expect(out.protected.decision).toBe('approve'); expect(out.protected.outcome).toBe('NOT_SETTLED');
   });
   it('rejects tampered evidence and requires references', async () => {
