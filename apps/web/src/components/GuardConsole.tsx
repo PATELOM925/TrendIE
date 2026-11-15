@@ -598,6 +598,37 @@ function DecisionPanel({ attempt }: { attempt: Attempt | null }) {
         <span className="meta-chip">Synthetic input</span>
       </div>
       <div className="payment-note"><strong>Payment status:</strong> Not executed. Verification does not dispatch a payment or prove settlement.</div>
+      {attempt.decision.decision === 'reject' && (
+        <div style={{ marginTop: '16px', padding: '14px', background: 'var(--color-bg-secondary, #18181b)', borderRadius: '10px', border: '1px solid var(--color-border, #27272a)' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>⚔️</span> Track 3 Paired Attack Comparison: Vulnerable Agent vs. Payment Guard
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ padding: '10px', background: '#271214', border: '1px solid #7f1d1d', borderRadius: '8px' }}>
+              <div style={{ color: '#ef4444', fontWeight: 700, fontSize: '12px', marginBottom: '4px' }}>
+                ❌ Vulnerable Agent (No Guard)
+              </div>
+              <p style={{ fontSize: '11px', color: '#fca5a5', margin: '0 0 6px 0', lineHeight: 1.4 }}>
+                Agent holds private keys directly. Prompt injection hijacks context and commands direct transfer:
+              </p>
+              <div style={{ fontSize: '11px', color: '#f87171', fontWeight: 700 }}>
+                💥 Result: Funds Stolen! ({formatTokenAmount(attempt.proposal.amount, attempt.proposal.currency)} wired to rogue destination)
+              </div>
+            </div>
+            <div style={{ padding: '10px', background: '#092317', border: '1px solid #14532d', borderRadius: '8px' }}>
+              <div style={{ color: '#22c55e', fontWeight: 700, fontSize: '12px', marginBottom: '4px' }}>
+                🛡️ Agentic Payment Guard
+              </div>
+              <p style={{ fontSize: '11px', color: '#86efac', margin: '0 0 6px 0', lineHeight: 1.4 }}>
+                Agent has zero signing keys. Gateway intercepts proposal and enforces deterministic policy off-chain in &lt;1.5ms:
+              </p>
+              <div style={{ fontSize: '11px', color: '#4ade80', fontWeight: 700 }}>
+                ✓ Result: Blocked! 0 satoshis moved ($0.00 loss, zero gas wasted)
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

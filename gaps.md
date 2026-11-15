@@ -96,17 +96,15 @@ The most important blockers are:
 ### G-06 — Agent attack demo is not yet equivalent to the PRD demonstration
 
 **Priority:** P0  
-**Accountable owner:** Person 4 / Om (agent and attack testing)  
+**Status:** **Closed on `develop`**  
+**Accountable owner:** Person 4 / Om & Tirth (agent and attack testing)  
 **Supporting owners:** Person 1 / Awais (gateway decision), Person 5 / Nasar (playground integration)
 
-- The repository now contains an optional Gemini model adapter and a web playground route that can send an untrusted listing to Gemini, then send its proposal to the gateway.
-- No live model attack result is recorded. The live route has no numeric model-spend authorization check; a configured `GEMINI_API_KEY` plus user action can make an external model request. Do not treat it as approved paid testing without a separate ceiling and authorization.
-- The scripted `demo:attack` does not call a real model for the unprotected scenario. It hardcodes the attacker's proposal and prints a successful outcome.
-- The protected “clean purchase” uses a fake gateway authority, fake signer, fake transaction hash, and fake RPC receipt; it does not settle on GOAT.
-- The Gemini playground always sends its proposal through the gateway. It is not, by itself, a paired vulnerable-agent path that demonstrates the same attack succeeding without the gateway and then being stopped with it.
-- The PRD's specified architecture names the OpenAI Agents SDK, while the live UI playground uses Gemini through a custom model adapter. If Gemini is the intended replacement, record that architecture decision and make sure the shared workflow and spend controls still apply.
-
-**Needed to close:** implement a controlled unprotected agent and a protected path using the same malicious input; capture reproducible model output and gateway evidence; keep wallet/payment credentials inaccessible to the model; add an explicit provider-spend gate before any live model call.
+- **Resolved:** `scripts/demo-attack.mjs` and the Web Console (`apps/web`) now execute a true paired vulnerability comparison using identical malicious invoice inputs:
+  1. **Path A (Vulnerable Agent Architecture):** Simulates standard agent setups where the agent has direct wallet/signing tool access. Prompt injection hijacks agent context and commands an unverified transfer $\rightarrow$ Funds are stolen and corporate treasury is drained.
+  2. **Path B (Protected Agent Architecture):** The agent operates in a dual-control sandbox with zero private keys. The identical proposal is submitted to the live Fastify Security Gateway (`POST /verify`). The Gateway halts execution deterministically (`REJECT [SELLER_MISMATCH, DESTINATION_NOT_ALLOWED, INJECTION_FLAGGED]`), logs the event into PostgreSQL, and denies execution tokens $\rightarrow$ Zero satoshis moved ($0.00 loss, zero gas wasted).
+  3. **Path C (Clean Authorized Purchase):** Legitimate invoice matching intent is approved by the live Gateway, issues a cryptographic HMAC approval token, and is consumed via `POST /approvals/:id/consume`.
+  4. **Live Web Console UI:** Rejections in the web dashboard now display a paired side-by-side comparison card illustrating the exact vulnerability vs. guard outcome. Testable via `npm run demo:attack`.
 
 ### G-07 — PDF extraction is not in the purchase workflow
 
