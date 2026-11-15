@@ -1,6 +1,6 @@
-import { PurchaseProposalSchema, canonicalJson, proposalFingerprint, type PurchaseProposal } from '@trendie/contracts';
+import { PurchaseProposalSchema, canonicalJson, parseProposal, proposalFingerprint, type PurchaseProposal } from '@trendie/contracts';
 import { inspectText, type InspectionResult } from '@trendie/inspection';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 export type Listing = { itemId: string; sellerId: string; title: string; amount: string; scale: number; asset: string; description?: string; sourceRef?: string };
 export type Discovery = { search(query: string, signal: AbortSignal): Promise<unknown> };
@@ -9,19 +9,34 @@ export type TrustedTask = { ownerId: string; intentId: string; intentVersion: nu
 export type WorkflowResult = { proposal: PurchaseProposal; inspection: InspectionResult & { sources: Array<{ itemId: string; sellerId: string; start: number; end: number; sourceRef?: string }> }; source: 'scripted' | 'model' };
 export type Limits = { timeoutMs?: number; maxListings?: number; maxTextChars?: number; maxTurns?: number; maxToolCalls?: number };
 
-export type AttackEvidence = { attemptId: string; sourceRef: string; contentSha256: string; fingerprint: string; ownerId: string; intentId: string; intentVersion: number; inspection: InspectionResult; modelMode: 'fixture' | 'injected'; modelInput: unknown; modelOutput: unknown };
-export async function runControlledComparison(input: { task: TrustedTask; query: string; discovery: Discovery; model: Model; gateway: { verify(proposal: PurchaseProposal, evidence: AttackEvidence): Promise<{ decision: 'approve' | 'reject'; reasons: string[] }> }; wallet: { record(proposal: PurchaseProposal): Promise<void> }; source?: 'scripted' | 'model'; limits?: Limits }) {
-  const workflow = await runPurchaseWorkflow({ ...input, source: input.source ?? 'model' });
-  const sourceRef = workflow.inspection.sources[0]?.sourceRef;
-  if (!sourceRef) throw new Error('Evidence source missing');
-  const listing = validateListings(await input.discovery.search(input.query, new AbortController().signal), input.limits?.maxListings ?? 20)[0];
-  if (!listing) throw new Error('Evidence content missing');
-  const content = `${listing.title}\n${listing.description ?? ''}`;
-  const evidence: AttackEvidence = { attemptId: `attempt_${Date.now()}_${Math.random().toString(16).slice(2)}`, sourceRef, contentSha256: createHash('sha256').update(content).digest('hex'), fingerprint: proposalFingerprint(workflow.proposal), ownerId: input.task.ownerId, intentId: input.task.intentId, intentVersion: input.task.intentVersion, inspection: workflow.inspection, modelMode: input.source === 'scripted' ? 'fixture' : 'injected', modelInput: { task: input.task.task, listings: [listing] }, modelOutput: workflow.proposal };
-  await input.wallet.record(workflow.proposal);
-  const decision = await input.gateway.verify(workflow.proposal, evidence);
-  if (proposalFingerprint(workflow.proposal) !== evidence.fingerprint) throw new Error('Evidence fingerprint mismatch');
-  return { proposal: workflow.proposal, evidence, vulnerable: { action: 'recorded', dispatched: false }, protected: { ...decision, dispatched: false, outcome: decision.decision === 'approve' ? 'approved' : 'blocked' } };
+export type AttackEvidence = { version: 1; attemptId: string; sourceRefs: string[]; contentSha256: string; canonicalProposalFingerprint: string; ownerId: string; intentId: string; intentVersion: number; inspection: InspectionResult & { sources: Array<{ itemId: string; sellerId: string; start: number; end: number; sourceRef?: string }> }; modelMode: 'fixture' | 'injected'; modelInput: unknown; modelOutput: unknown };
+export function validateEvidence(e: AttackEvidence, proposal: unknown): AttackEvidence {
+  const parsed = parseProposal(proposal);
+  if (e.version !== 1 || e.canonicalProposalFingerprint !== proposalFingerprint(parsed) || e.ownerId !== parsed.ownerId || e.intentId !== parsed.intentId || e.intentVersion !== parsed.intentVersion || e.sourceRefs.length !== e.inspection.sources.length || e.sourceRefs.some((ref, i) => ref !== e.inspection.sources[i]?.sourceRef)) throw new TypeError('Invalid evidence');
+  return e;
+}
+export async function runControlledComparison(input: { task: TrustedTask; query: string; discovery: Discovery; model: Model; gateway: { verify(proposal: Readonly<PurchaseProposal>, evidence: Readonly<AttackEvidence>): Promise<{ decision: 'approve' | 'reject' | 'review'; reasons: string[] }> }; modelMode: 'fixture' | 'injected'; limits?: Limits }) {
+  const limits = validateLimits(input.limits ?? {}); validateTask(input.task);
+  if (typeof input.query !== 'string' || !input.query.length || input.query.length > 500) throw new TypeError('Invalid query');
+  const controller = new AbortController(); let timer: ReturnType<typeof setTimeout>;
+  const bounded = <T>(p: Promise<T>) => Promise.race([p, new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new Error('Comparison timed out')); }, limits.timeoutMs); })]).finally(() => clearTimeout(timer!));
+  try {
+    const listings = validateListings(await bounded(input.discovery.search(input.query, controller.signal)), limits.maxListings).map((x) => Object.freeze({ ...x }));
+    if (listings.some(x => !x.sourceRef)) throw new TypeError('Missing source reference');
+    const text = listings.map(x => `${x.title}\n${x.description ?? ''}`).join('\n');
+    if (text.length > limits.maxTextChars) throw new RangeError('Inspection limit');
+    const inspected = inspectText(text, limits.maxTextChars); const sources = listings.map(x => { const start = text.indexOf(`${x.title}\n${x.description ?? ''}`); return { itemId: x.itemId, sellerId: x.sellerId, start, end: start + `${x.title}\n${x.description ?? ''}`.length, sourceRef: x.sourceRef! }; });
+    const raw = await bounded(input.model.propose({ task: input.task.task, listings: listings.map(x => ({ ...x })), signal: controller.signal, maxTurns: limits.maxTurns, maxToolCalls: limits.maxToolCalls }));
+    validateBoundedPayload(raw, 'Proposal'); if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new TypeError('Invalid proposal');
+    const c = raw as Record<string, unknown>; if (Object.keys(c).some(k => !['itemId','sellerId','money','asset','providerArgs'].includes(k))) throw new TypeError('Invalid proposal keys');
+    const proposal = parseProposal({ ...c, version: 1, ownerId: input.task.ownerId, intentId: input.task.intentId, intentVersion: input.task.intentVersion, platform: input.task.platform, chain: input.task.chain });
+    const freeze = <T>(v:T):T => { if (v && typeof v === 'object') { Object.values(v as object).forEach(x => freeze(x)); Object.freeze(v); } return v; };
+    const frozenProposal = freeze(parseProposal(proposal));
+    const evidence = freeze({ version: 1 as const, attemptId: randomUUID(), sourceRefs: sources.map(s => s.sourceRef!), contentSha256: createHash('sha256').update(canonicalJson(listings)).digest('hex'), canonicalProposalFingerprint: proposalFingerprint(frozenProposal), ownerId: input.task.ownerId, intentId: input.task.intentId, intentVersion: input.task.intentVersion, inspection: { ...inspected, sources }, modelMode: input.modelMode, modelInput: { task: input.task.task, listings }, modelOutput: frozenProposal });
+    validateEvidence(evidence, frozenProposal);
+    const decision = await bounded(input.gateway.verify(frozenProposal, evidence));
+    return { proposal: frozenProposal, evidence, vulnerable: { action: 'recorded' as const, executed: false, providerDispatch: false }, protected: { decision: decision.decision, reasons: [...decision.reasons], providerDispatch: false as const, outcome: 'NOT_SETTLED' as const } };
+  } catch (e) { if (controller.signal.aborted) throw new Error('Comparison timed out'); throw e instanceof TypeError || e instanceof RangeError ? e : new Error('Comparison failed'); }
 }
 
 const defaults = { timeoutMs: 5_000, maxListings: 20, maxTextChars: 100_000, maxTurns: 1, maxToolCalls: 1 };
