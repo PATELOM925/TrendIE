@@ -8,6 +8,7 @@ const signature = new TextEncoder().encode('%PDF-1.7\nfixture');
 function upload(file: File, requestOrigin = origin): Request {
   const form = new FormData();
   form.append('file', file, file.name);
+  form.append('intentId', 'int_demo');
   return new Request(`${origin}/api/pdf`, {
     method: 'POST',
     headers: { origin: requestOrigin },
@@ -82,6 +83,56 @@ describe('PDF upload extraction', () => {
         limitations: [],
       }),
     )).rejects.toMatchObject({ status: 422 });
+  });
+
+  it('validates supplementary Unicode using Python-compatible code point counts', async () => {
+    const result = await extractPdfUpload(
+      upload(new File([signature], 'unicode.pdf', { type: 'application/pdf' })),
+      async () => ({
+        pageCount: 1,
+        textChars: 1,
+        pages: [{ page: 1, text: '😀' }],
+        limitations: [],
+      }),
+    );
+
+    expect(result.extractedChars).toBe(1);
+    expect(result.text).toBe('😀');
+    expect(result.intentId).toBe('int_demo');
+  });
+
+  it('reports truncation caused by page separator newlines', async () => {
+    const firstPage = 'A'.repeat(10_000);
+    const secondPage = 'B'.repeat(10_000);
+    const result = await extractPdfUpload(
+      upload(new File([signature], 'two-pages.pdf', { type: 'application/pdf' })),
+      async () => ({
+        pageCount: 2,
+        textChars: 20_000,
+        pages: [{ page: 1, text: firstPage }, { page: 2, text: secondPage }],
+        limitations: [],
+      }),
+    );
+
+    expect(result.extractedChars).toBe(20_000);
+    expect(result.truncated).toBe(true);
+    expect(Array.from(result.text)).toHaveLength(20_000);
+  });
+
+  it('rejects browser-supplied evidence fields alongside the PDF', async () => {
+    const form = new FormData();
+    form.append('file', new File([signature], 'invoice.pdf', { type: 'application/pdf' }));
+    form.append('intentId', 'int_demo');
+    form.append('inspectionText', 'forged text');
+    const request = new Request(`${origin}/api/pdf`, {
+      method: 'POST',
+      headers: { origin },
+      body: form,
+    });
+    const inspect = vi.fn();
+
+    await expect(extractPdfUpload(request, inspect)).rejects.toMatchObject({ status: 400 });
+    expect(inspect).not.toHaveBeenCalled();
   });
 
   it('rejects encrypted-file extraction errors with a safe message and status', async () => {

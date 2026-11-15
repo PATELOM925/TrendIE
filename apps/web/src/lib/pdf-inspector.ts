@@ -1,8 +1,8 @@
-import { execFile } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, dirname, join } from 'node:path';
+import { inspectPdf } from '../../../../services/pdf-inspection/inspect.mjs';
+import type { ProposalView } from '@/lib/types';
 
 export const PDF_MAX_BYTES = 5_000_000;
 export const PDF_MAX_PAGES = 20;
@@ -10,9 +10,9 @@ export const PDF_MAX_TEXT_CHARS = 100_000;
 export const PDF_INSPECTION_TEXT_LIMIT = 20_000;
 const PDF_REQUEST_OVERHEAD_BYTES = 64 * 1024;
 const INSPECTOR_TIMEOUT_MS = 5_000;
-const INSPECTOR_OUTPUT_LIMIT_BYTES = 1_200_000;
 
 export type PdfInspection = {
+  intentId: string;
   source: string;
   text: string;
   pageCount: number;
@@ -26,6 +26,26 @@ export class PdfUploadError extends Error {
     super(message);
     this.name = 'PdfUploadError';
   }
+}
+
+export function fitPdfInspectionText(proposal: ProposalView, source: string, text: string): { text: string; truncated: boolean } {
+  const points = Array.from(text);
+  let low = 0;
+  let high = Math.min(points.length, PDF_INSPECTION_TEXT_LIMIT);
+  let best = 0;
+  const encoder = new TextEncoder();
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    const candidate = points.slice(0, middle).join('');
+    const body = JSON.stringify({ proposal, inspectionText: { source, text: candidate } });
+    if (encoder.encode(body).byteLength <= 60 * 1024) {
+      best = middle;
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return { text: points.slice(0, best).join(''), truncated: best < points.length };
 }
 
 type ExtractedDocument = {
@@ -72,8 +92,13 @@ export async function extractPdfUpload(
     throw new PdfUploadError(400, 'Upload must contain one valid PDF file.');
   }
 
-  if ([...form.keys()].some((key) => key !== 'file') || form.getAll('file').length !== 1) {
-    throw new PdfUploadError(400, 'Upload must contain exactly one PDF file.');
+  if ([...form.keys()].some((key) => key !== 'file' && key !== 'intentId') ||
+      form.getAll('file').length !== 1 || form.getAll('intentId').length !== 1) {
+    throw new PdfUploadError(400, 'Upload must contain one PDF file and one authorization ID.');
+  }
+  const intentId = form.get('intentId');
+  if (typeof intentId !== 'string' || intentId.trim() !== intentId || intentId.length < 1 || intentId.length > 64) {
+    throw new PdfUploadError(400, 'A valid authorization ID is required.');
   }
   const uploaded = form.get('file');
   if (!(uploaded instanceof File)) throw new PdfUploadError(400, 'Upload must contain one PDF file.');
@@ -100,12 +125,14 @@ export async function extractPdfUpload(
     const normalized = validateExtractedDocument(extracted);
     const filename = uploaded.name.replaceAll('\\', '/').split('/').at(-1) ?? 'invoice.pdf';
     const source = `uploaded-pdf:${filename.replace(/[\r\n\0]/g, '').slice(0, 120) || 'invoice.pdf'}`;
+    const extractedText = Array.from(normalized.text);
     return {
+      intentId,
       source,
-      text: normalized.text.slice(0, PDF_INSPECTION_TEXT_LIMIT),
+      text: extractedText.slice(0, PDF_INSPECTION_TEXT_LIMIT).join(''),
       pageCount: normalized.pageCount,
       extractedChars: normalized.textChars,
-      truncated: normalized.textChars > PDF_INSPECTION_TEXT_LIMIT,
+      truncated: extractedText.length > PDF_INSPECTION_TEXT_LIMIT,
       limitations: normalized.limitations,
     };
   } finally {
@@ -137,39 +164,16 @@ async function readBoundedRequest(request: Request, maxBytes: number): Promise<B
 }
 
 async function runPdfInspector(filePath: string): Promise<unknown> {
-  const scriptPath = resolveInspectorPath();
-  const executable = process.env.PDF_PYTHON?.trim() || (process.platform === 'win32' ? 'python' : 'python3');
-  const output = await new Promise<string>((resolveOutput, rejectOutput) => {
-    execFile(executable, [scriptPath, filePath], {
-      encoding: 'utf8',
-      timeout: INSPECTOR_TIMEOUT_MS,
-      maxBuffer: INSPECTOR_OUTPUT_LIMIT_BYTES,
-      windowsHide: true,
-      shell: false,
-    }, (error, stdout) => {
-      if (error) {
-        rejectOutput(new PdfUploadError(422, 'PDF extraction failed. Encrypted, oversized, or unsupported PDFs are rejected.'));
-        return;
-      }
-      resolveOutput(stdout);
-    });
-  });
-
   try {
-    return JSON.parse(output) as unknown;
+    return await inspectPdf({
+      path: basename(filePath),
+      allowlistedRoot: dirname(filePath),
+      python: process.env.PDF_PYTHON?.trim() || (process.platform === 'win32' ? 'python' : 'python3'),
+      timeoutMs: INSPECTOR_TIMEOUT_MS,
+    });
   } catch {
-    throw new PdfUploadError(502, 'PDF extractor returned an invalid response.');
+    throw new PdfUploadError(422, 'PDF extraction failed or exceeded its resource limits. Encrypted and unsupported PDFs are rejected.');
   }
-}
-
-function resolveInspectorPath(): string {
-  const candidates = [
-    resolve(process.cwd(), 'services/pdf-inspection/inspect_pdf.py'),
-    resolve(process.cwd(), '../../services/pdf-inspection/inspect_pdf.py'),
-  ];
-  const scriptPath = candidates.find(existsSync);
-  if (!scriptPath) throw new PdfUploadError(503, 'PDF inspector is not available in this checkout.');
-  return scriptPath;
 }
 
 function validateExtractedDocument(value: unknown): ExtractedDocument & { text: string } {
@@ -192,7 +196,7 @@ function validateExtractedDocument(value: unknown): ExtractedDocument & { text: 
     pages.push({ page: page.page as number, text: page.text });
   }
   const text = pages.map((page) => page.text).join('\n');
-  const extractedCharacterCount = pages.reduce((count, page) => count + page.text.length, 0);
+  const extractedCharacterCount = pages.reduce((count, page) => count + Array.from(page.text).length, 0);
   if (extractedCharacterCount > PDF_MAX_TEXT_CHARS || extractedCharacterCount !== textChars) {
     throw new PdfUploadError(502, 'PDF extractor returned inconsistent text limits.');
   }

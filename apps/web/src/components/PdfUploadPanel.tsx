@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import type { DecisionView, IntentView, ProposalView } from '@/lib/types';
 
 type Finding = { code: string; excerpt: string };
@@ -34,14 +34,21 @@ export type PdfUploadResult = {
 type PdfUploadPanelProps = {
   intent: IntentView;
   disabled?: boolean;
+  onBusyChange?: (busy: boolean) => void;
   onVerified: (result: PdfUploadResult) => void;
 };
 
-export function PdfUploadPanel({ intent, disabled = false, onVerified }: PdfUploadPanelProps) {
+export function PdfUploadPanel({ intent, disabled = false, onBusyChange, onVerified }: PdfUploadPanelProps) {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<PdfUploadResult | null>(null);
+
+  useEffect(() => {
+    setFile(null);
+    setError('');
+    setResult(null);
+  }, [intent.id]);
 
   async function inspectAndVerify(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,52 +59,24 @@ export function PdfUploadPanel({ intent, disabled = false, onVerified }: PdfUplo
       return;
     }
     setBusy(true);
+    onBusyChange?.(true);
     try {
       const form = new FormData();
       form.append('file', file, file.name);
+      form.append('intentId', intent.id);
       const uploadResponse = await fetch('/api/pdf', { method: 'POST', body: form, cache: 'no-store' });
-      const uploadBody = await uploadResponse.json() as { inspection?: PdfInspectionView; error?: string };
-      if (!uploadResponse.ok || !uploadBody.inspection) {
-        throw new Error(uploadBody.error ?? 'PDF inspection failed.');
+      const uploadBody = await uploadResponse.json() as Partial<PdfUploadResult> & { error?: string };
+      if (!uploadResponse.ok || !uploadBody.proposal || !uploadBody.inspectionText || !uploadBody.extraction || !uploadBody.verification) {
+        throw new Error(uploadBody.error ?? 'PDF extraction and verification failed.');
       }
-
-      const proposal: ProposalView = {
-        intentId: intent.id,
-        seller: intent.seller,
-        product: intent.product,
-        amount: intent.maxAmount,
-        currency: intent.currency,
-        destination: intent.allowedDestinations[0] ?? 'demo-destination-missing',
-        sourceRef: uploadBody.inspection.source,
-      };
-      const inspectionText = {
-        source: uploadBody.inspection.source,
-        text: fitVerificationText(proposal, uploadBody.inspection.source, uploadBody.inspection.text),
-      };
-      const verificationTextTruncated = inspectionText.text.length < uploadBody.inspection.text.length;
-      const verifyResponse = await fetch('/api/verify', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ proposal, inspectionText }),
-        cache: 'no-store',
-      });
-      const verifyBody = await verifyResponse.json() as VerificationView & { error?: string };
-      if (!verifyResponse.ok || !verifyBody.decision || !verifyBody.inspection) {
-        throw new Error(verifyBody.error ?? 'Gateway decision could not be confirmed. No payment was attempted.');
-      }
-      const completed: PdfUploadResult = {
-        proposal,
-        inspectionText,
-        extraction: uploadBody.inspection,
-        verification: { decision: verifyBody.decision, inspection: verifyBody.inspection },
-        verificationTextTruncated,
-      };
+      const completed = uploadBody as PdfUploadResult;
       setResult(completed);
       onVerified(completed);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'PDF verification is unconfirmed. No payment was attempted.');
     } finally {
       setBusy(false);
+      onBusyChange?.(false);
     }
   }
 
@@ -146,24 +125,4 @@ export function PdfUploadPanel({ intent, disabled = false, onVerified }: PdfUplo
       )}
     </section>
   );
-}
-
-function fitVerificationText(proposal: ProposalView, source: string, text: string): string {
-  const codePoints = Array.from(text);
-  let low = 0;
-  let high = codePoints.length;
-  let best = 0;
-  const encoder = new TextEncoder();
-  while (low <= high) {
-    const middle = Math.floor((low + high) / 2);
-    const candidate = codePoints.slice(0, middle).join('');
-    const body = JSON.stringify({ proposal, inspectionText: { source, text: candidate } });
-    if (encoder.encode(body).byteLength <= 60 * 1024) {
-      best = middle;
-      low = middle + 1;
-    } else {
-      high = middle - 1;
-    }
-  }
-  return codePoints.slice(0, best).join('');
 }
