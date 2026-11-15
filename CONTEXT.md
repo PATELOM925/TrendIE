@@ -12,7 +12,8 @@ or force-pushed. See [team handoff](docs/team-handoff.md).
 The original reviewed heads were QPE `7fe5e24`, AAT `a0d57e3`, GOAT `139e5da` and Awais `5a9d3d4`.
 See the [review disposition](docs/reviews/2026-11-14-integration.md) for full pins and limitations.
 The newer Awais source includes GOAT and cross-platform fixture work; it does not prove live
-integration. No Nassar frontend or Tirth branch was visible at the latest remote inspection.
+integration. No Tirth branch was visible at the latest remote inspection. Nassar's local frontend
+implementation is on `nasar-frontend` and has not been merged or independently accepted.
 
 The authorized workflow is contributor PRs into `develop` for combined checks and previews, then
 an independently approved production PR to `main`. The owner has authorized this agent to merge
@@ -27,7 +28,7 @@ write production under this authorization. See [the plan](docs/plan.md).
 | Person 2 / GOAT, Om | Testnet3 adapter and proposed authority interface; HTTP bridge now denies claims and reports checkpoint/outcome persistence unsupported without network calls. | Trusted durable gateway binding, checkpoint and owner-scoped recovery endpoints; configured test wallet, separately authorized bounded testnet action and checked receipt. |
 | Person 3 / Qatom/QPE, Om | Node 22 npm workspace, contracts and read-only MCP client; paid checkout remains disabled by default. | Authenticated tool/schema evidence, exact atomic price binding, receipt semantics, and gateway alignment. |
 | Person 4 / AAT, Om | Synthetic clean/malicious fixtures and local proposal/inspection/PDF integration fixtures. | Real model attack evidence (if authorized), combined gateway/Qatom integration and reproducible security comparisons. |
-| Person 5 / Nassar | No frontend branch visible. | UI and system integration against aligned public interfaces. |
+| Person 5 / Nassar | Local Next.js Guard Console and server-side gateway routes are implemented on `nasar-frontend`; synthetic proposal decisions use the local gateway, and the existing text scanner is called server-side. | Persisted proposal/evidence audit reconstruction, PDF upload/extraction UI, receipt integration, owner authentication, and end-to-end database verification remain open. |
 
 The [integration matrix](docs/integration.md) separates the original reviewed defects from current
 mitigations. Both legacy adapter HTTP authorities now deny claims and refuse writes before network
@@ -41,11 +42,13 @@ their audit entries. Local configuration uses loopback and an explicit CORS allo
 service keys. Owner-scoped authentication, the complete shared proposal/approval contract and durable
 adapter checkpoint/continuation endpoints remain open. Outcome integrity is implemented in the candidate with consumed-platform binding, checked state transitions and transactional write/audit regression coverage; it remains subject to re-review.
 
-Stages 1–3 are not complete: local slices exist across Persons 1–4, but owner approval, aligned
-contracts, combined local Postgres endpoint tests, model-based attack evidence, a GOAT receipt and
-authenticated Qatom checkout are outstanding. Stage 4 security comparisons and Stage 5 demo
-verification remain; Stage 6 escrow is optional stretch work. Merging to `develop` alone completes
-none of these acceptance gates.
+Stages 1–3 are not complete: the Person 5 frontend now covers local scaffolding, intent/proposal
+screens, gateway decisions, and session evidence, but owner approval, aligned contracts, combined
+local Postgres endpoint tests, model-based attack evidence, a GOAT receipt and authenticated Qatom
+checkout remain outstanding. The frontend does not yet upload/extract PDF invoices or reconstruct
+persisted proposal evidence after reload. Stage 4 security comparisons and Stage 5 demo verification
+remain; Stage 6 escrow is optional stretch work. Merging to `develop` alone completes none of these
+acceptance gates.
 
 ## Setup and live boundaries
 
@@ -61,6 +64,14 @@ was used for this documentation task. No numeric paid-call ceiling is approved; 
 remains zero by default (Q003).
 
 ## Current local checks
+
+On the current `nasar-frontend` working tree, the Next.js web workspace and server-side BFF passed
+`npm run web:build`, `npm run typecheck`, `npm run lint`, and `npm test` (79 tests) on Node 22.20.0.
+The independent frontend review found no remaining blockers for this local slice. These checks use
+local source and mocked HTTP responses; no gateway database, migration, provider, payment adapter,
+wallet, or chain was exercised. `npm ci --ignore-scripts` reported two high-severity dependency
+findings; see the dependency audit before any external use. The frontend has not been run against a
+configured gateway/PostgreSQL instance or visually reviewed in a browser.
 
 The earlier combined runtime source at `6ba9fcc4334f2eea5eeb0209311e6d8f9fb5ee99` passed root
 typecheck, lint, build and 65 tests; separate gateway typecheck, lint, build and 60 offline tests;
@@ -90,6 +101,6 @@ see [dependency audit](docs/dependencies.md). No paid calls or chain transaction
 4. Obtain authenticated Qatom capabilities and verify price binding/receipt; obtain numeric paid
    authorization separately before any paid call. Configure an isolated GOAT test wallet and get a
    separate explicit testnet spend ceiling before a transaction.
-5. Nassar implements the frontend when available. Rehearse only on an authorized test environment.
+5. Nassar completes the remaining frontend acceptance work. Rehearse only on an authorized test environment.
 
 Open decisions and blockers: [docs/questions.md](docs/questions.md).

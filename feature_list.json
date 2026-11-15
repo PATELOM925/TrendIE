@@ -1,0 +1,293 @@
+{
+  "project": "Agentic Payment Guard",
+  "version": "0.1",
+  "source_documents": [
+    "PRD.md",
+    "Division.md"
+  ],
+  "owners": [
+    {
+      "id": "person_1",
+      "name": "Person 1",
+      "role": "Security & Backend"
+    },
+    {
+      "id": "person_2",
+      "name": "Person 2",
+      "role": "GOAT Integration & Escrow"
+    },
+    {
+      "id": "person_3",
+      "name": "Person 3",
+      "role": "Qatom Integration"
+    },
+    {
+      "id": "person_4",
+      "name": "Person 4",
+      "role": "AI Agent & Attack Testing"
+    },
+    {
+      "id": "person_5",
+      "name": "Person 5",
+      "role": "Frontend & System Integration"
+    }
+  ],
+  "features": [
+    {
+      "id": "F-001",
+      "name": "Trusted purchase intent registration",
+      "priority": "P0",
+      "owner": "Person 1",
+      "contributors": ["Person 5"],
+      "status": "implemented",
+      "description": "Register and persist the buyer's trusted authorization independently of agent-controlled context.",
+      "requirements": [
+        "Store owner, seller, product, maximum amount, currency or token, expiry, and remaining uses.",
+        "Use integer monetary units and immutable authorization records.",
+        "Expose an interface for users to create an authorization."
+      ],
+      "acceptance_criteria": [
+        "A user can register an intent with all required constraints.",
+        "The trusted intent is stored outside the agent's control."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "F-002",
+      "name": "Deterministic purchase verification and authorization lifecycle",
+      "priority": "P0",
+      "owner": "Person 1",
+      "contributors": ["Person 4"],
+      "status": "implemented",
+      "description": "Compare each purchase proposal with its registered intent and issue a transaction-bound, single-use approval only when every policy check passes.",
+      "requirements": [
+        "Validate authorization ID, seller, product, amount, currency or token, recipient or destination, and expiry.",
+        "Reject expired, mismatched, exhausted, or replayed authorizations.",
+        "Consume one-use authorizations atomically and prevent duplicate execution IDs.",
+        "Bind approval to the exact approved proposal so adapters cannot change its fields.",
+        "Return approved, rejected, or review-required decisions with reason codes and timestamps."
+      ],
+      "acceptance_criteria": [
+        "Valid purchases pass and deterministic authorization violations fail closed.",
+        "Duplicate and replay attempts cannot create additional payments.",
+        "Every decision records an auditable reason."
+      ],
+      "dependencies": ["F-001"]
+    },
+    {
+      "id": "F-003",
+      "name": "Security gateway and payment interception",
+      "priority": "P0",
+      "owner": "Person 1",
+      "contributors": ["Person 2", "Person 3"],
+      "status": "implemented",
+      "description": "Provide the Fastify security authority through which all payment actions must pass.",
+      "requirements": [
+        "Keep payment credentials inaccessible to the LLM.",
+        "Require gateway approval before any payment adapter executes.",
+        "Fail closed when verification is unavailable or the proposal is unverified.",
+        "Record verification and execution decisions."
+      ],
+      "acceptance_criteria": [
+        "Unauthorized or unverified purchases are blocked before execution.",
+        "No agent or adapter can bypass the gateway to perform checkout."
+      ],
+      "dependencies": ["F-002"]
+    },
+    {
+      "id": "F-004",
+      "name": "Prompt-injection inspection for listings and invoices",
+      "priority": "P0",
+      "owner": "Person 4",
+      "contributors": [],
+      "status": "implemented",
+      "description": "Inspect untrusted merchant content and PDF invoices for suspicious instructions and return evidence to the gateway and audit trail.",
+      "requirements": [
+        "Inspect product descriptions and catalog listings.",
+        "Extract PDF invoice text with PyMuPDF, including hidden text-layer content where available.",
+        "Return source, suspicious evidence, flags, and extraction findings.",
+        "Treat inspection signals as evidence; deterministic authorization remains the payment authority."
+      ],
+      "acceptance_criteria": [
+        "Malicious listing and PDF fixtures produce inspection findings with evidence.",
+        "Legitimate content can proceed when its purchase matches the registered intent."
+      ],
+      "dependencies": ["F-001"]
+    },
+    {
+      "id": "F-005",
+      "name": "Purchasing agent and attack comparison demo",
+      "priority": "P0",
+      "owner": "Person 4",
+      "contributors": ["Person 1", "Person 5"],
+      "status": "implemented",
+      "description": "Build the tool-calling purchasing agent and demonstrate the same malicious content against an unprotected agent and the protected gateway flow.",
+      "requirements": [
+        "Provide clean and malicious product or invoice fixtures.",
+        "Generate purchase proposals using the shared PurchaseProposal contract.",
+        "Show an unprotected test agent being manipulated in a controlled scenario.",
+        "Show the protected flow rejecting the resulting unauthorized proposal."
+      ],
+      "acceptance_criteria": [
+        "At least one attack succeeds against the intentionally unprotected test agent.",
+        "The corresponding protected transaction is blocked and its evidence is recorded.",
+        "A legitimate authorized purchase still completes."
+      ],
+      "dependencies": ["F-002", "F-003", "F-004"]
+    },
+    {
+      "id": "F-006",
+      "name": "GOAT AgentKit payment integration",
+      "priority": "P0",
+      "owner": "Person 2",
+      "contributors": ["Person 1"],
+      "status": "implemented",
+      "description": "Execute gateway-approved payments through GOAT AgentKit and verify their on-chain results.",
+      "requirements": [
+        "Configure a GOAT Testnet3 wallet and adapter using AgentKit and viem.",
+        "Accept only exact gateway-approved transaction parameters.",
+        "Keep wallet credentials inaccessible to the agent.",
+        "Submit transactions and verify receipts and status.",
+        "Handle uncertain outcomes conservatively to avoid duplicate payments."
+      ],
+      "acceptance_criteria": [
+        "At least one gateway-approved payment executes on GOAT Testnet3 with a verifiable receipt.",
+        "Unauthorized payments never execute."
+      ],
+      "dependencies": ["F-003"]
+    },
+    {
+      "id": "F-007",
+      "name": "Qatom MCP discovery and checkout integration",
+      "priority": "P0",
+      "owner": "Person 3",
+      "contributors": ["Person 1"],
+      "status": "implemented",
+      "description": "Wrap authenticated Qatom marketplace discovery and checkout tools so checkout is available only for gateway-approved proposals.",
+      "requirements": [
+        "Verify MCP authentication, checkout permissions, and test transaction availability.",
+        "Implement catalog_search and agent_checkout where supported.",
+        "Validate approved parameters immediately before checkout.",
+        "Handle errors and retries conservatively to avoid duplicate payments.",
+        "Document actual Qatom capabilities and limitations."
+      ],
+      "acceptance_criteria": [
+        "Authenticated catalog discovery works.",
+        "An approved checkout completes where supported and returns a receipt or checkout reference.",
+        "Unauthorized checkout requests are blocked."
+      ],
+      "dependencies": ["F-003"]
+    },
+    {
+      "id": "F-008",
+      "name": "Audit records and decision evidence",
+      "priority": "P0",
+      "owner": "Person 1",
+      "contributors": ["Person 2", "Person 3", "Person 4"],
+      "status": "implemented",
+      "description": "Persist the intent reference, proposal, verification decision, inspection evidence, and payment outcome for each attempt.",
+      "requirements": [
+        "Record authorization and verification decisions with reasons and timestamps.",
+        "Record execution IDs, platform, transaction hash or checkout reference, status, and errors.",
+        "Connect inspection evidence and payment results to the relevant proposal and intent."
+      ],
+      "acceptance_criteria": [
+        "Every attempted transaction has an auditable decision and outcome.",
+        "A rejected attack can be reviewed with its original intent, proposal, reason, and evidence."
+      ],
+      "dependencies": ["F-002", "F-003"]
+    },
+    {
+      "id": "F-009",
+      "name": "Authorization and audit dashboard",
+      "priority": "P1",
+      "owner": "Person 5",
+      "contributors": ["Person 1"],
+      "status": "implemented",
+      "description": "Provide a Next.js interface to register purchase intents and review decisions and audit evidence.",
+      "requirements": [
+        "Display trusted intent, proposed payment, decision, reason, inspection evidence, and transaction status.",
+        "Show approved, rejected, and review-required decisions.",
+        "Provide a minimal interface needed for the end-to-end demonstration."
+      ],
+      "acceptance_criteria": [
+        "A user can complete the protected purchase flow through one interface.",
+        "The user can see authorization, decision, evidence, and actual payment outcome."
+      ],
+      "dependencies": ["F-001", "F-008"]
+    },
+    {
+      "id": "F-010",
+      "name": "Human review for ambiguous proposals",
+      "priority": "P1",
+      "owner": "Person 1",
+      "contributors": ["Person 5"],
+      "status": "implemented",
+      "description": "Route ambiguous purchase proposals to a human for approval before payment execution.",
+      "requirements": [
+        "Represent review-required as a distinct decision.",
+        "Prevent execution until an authorized human resolves the review."
+      ],
+      "acceptance_criteria": [
+        "Ambiguous proposals are visible for review and cannot execute while unresolved."
+      ],
+      "dependencies": ["F-002", "F-009"]
+    },
+    {
+      "id": "F-011",
+      "name": "GOAT escrow and conditional settlement",
+      "priority": "Stretch",
+      "owner": "Person 2",
+      "contributors": ["Person 1", "Person 5"],
+      "status": "not_started",
+      "description": "Implement an optional GOAT-native escrow path for approved transactions, separate from direct GOAT Flow or Qatom checkout.",
+      "requirements": [
+        "Build a Solidity escrow contract with deposit, release, refund, and dispute operations.",
+        "Bind escrow deposits to gateway-approved authorization and transaction details.",
+        "Release only on trusted, objectively verifiable fulfillment evidence; do not rely solely on an LLM judgment.",
+        "Expose escrow status and outcome in the dashboard."
+      ],
+      "acceptance_criteria": [
+        "A separate approved transaction can be deposited into escrow.",
+        "Release and refund paths work under their contract conditions and are demonstrable."
+      ],
+      "dependencies": ["F-003", "F-006", "F-008", "F-009"]
+    },
+    {
+      "id": "F-012",
+      "name": "Delivery verification for escrow release",
+      "priority": "Stretch",
+      "owner": "Person 4",
+      "contributors": ["Person 2"],
+      "status": "not_started",
+      "description": "Verify agreed fulfillment evidence using objective conditions before the escrow release path can proceed.",
+      "requirements": [
+        "Define verifiable delivery conditions for the demo.",
+        "Provide trusted verification evidence to the escrow release flow."
+      ],
+      "acceptance_criteria": [
+        "Escrow release requires evidence that satisfies the agreed delivery conditions."
+      ],
+      "dependencies": ["F-011"]
+    },
+    {
+      "id": "F-013",
+      "name": "Integrated deployment and demo readiness",
+      "priority": "P0",
+      "owner": "Person 5",
+      "contributors": ["Person 1", "Person 2", "Person 3", "Person 4"],
+      "status": "implemented",
+      "description": "Integrate the components into one runnable demo environment and document setup and the demonstration flow.",
+      "requirements": [
+        "Connect frontend, gateway, agent, and payment adapters through shared API contracts.",
+        "Show real payment outcomes rather than simulated success.",
+        "Document setup, integration limitations, and demo steps."
+      ],
+      "acceptance_criteria": [
+        "The protected purchase flow works end to end through the shared gateway.",
+        "The demo shows intent, attack attempt, blocked proposal, successful legitimate GOAT payment, supported Qatom flow, and audit evidence."
+      ],
+      "dependencies": ["F-003", "F-005", "F-006", "F-007", "F-008", "F-009"]
+    }
+  ]
+}

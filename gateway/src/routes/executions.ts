@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { PaymentResultSchema } from '../schemas/index.js';
-import { withTransaction } from '../db/client.js';
+import { pool, withTransaction } from '../db/client.js';
 import { requireRole } from '../auth/plugin.js';
 import { appendAuditLog } from '../audit/hashChain.js';
 import { canTransition, normalizeStatus, sameOutcome, validOutcome } from '../executions/state.js';
@@ -41,4 +41,35 @@ export const executionRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to record payment result' });
     }
   });
+
+  fastify.get(
+    '/executions/:id',
+    {
+      preHandler: [requireRole('adapter-goat', 'adapter-qatom', 'dashboard', 'admin')],
+    },
+    async (req, reply) => {
+      const { id } = req.params as { id: string };
+      try {
+        const res = await pool.query('SELECT * FROM executions WHERE execution_id = $1', [id]);
+        if (!res.rows.length) {
+          return reply.status(404).send({ error: 'EXECUTION_NOT_FOUND', message: 'Execution not found' });
+        }
+        const row = res.rows[0];
+        return reply.status(200).send({
+          executionId: row.execution_id,
+          approvalId: row.approval_id,
+          status: normalizeStatus(row.status),
+          platform: row.platform,
+          txHashOrCheckoutRef: row.tx_hash_or_checkout_ref,
+          error: row.error,
+          evidence: row.evidence ?? {},
+          createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+          updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+        });
+      } catch (err) {
+        req.log.error(err);
+        return reply.status(500).send({ error: 'INTERNAL_ERROR', message: 'Failed to fetch execution' });
+      }
+    }
+  );
 };

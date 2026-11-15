@@ -9,11 +9,12 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest run",
-    "test:unit": "NODE_ENV=test TEST_DATABASE_URL=postgresql://unit:unit@127.0.0.1:5432/gateway_test APPROVAL_HMAC_SECRET=unit-only-secret-with-at-least-32-characters APPROVAL_KEY_ID=unit CORS_ORIGINS=http://localhost:3000 API_KEY_AGENT=unit-agent API_KEY_ADAPTER_GOAT=unit-goat API_KEY_ADAPTER_QATOM=unit-qatom API_KEY_DASHBOARD=unit-dashboard API_KEY_ADMIN=unit-admin TEST_SUITE=unit vitest run",
+    "test:unit": "vitest run",
     "test:integration": "NODE_ENV=test TEST_SUITE=integration vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
-    "db:migrate": "tsx src/db/migrate.ts"
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed": "tsx src/db/seed.ts"
   },
   "keywords": [],
   "author": "",
