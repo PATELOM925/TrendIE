@@ -46,7 +46,7 @@ Autonomous AI agents are being handed wallets, credit cards, and signing authori
 ```
 
 ### Key Architectural Pillars:
-1. **Deterministic policy:** The gateway source evaluates proposals against stored intent constraints. Current PostgreSQL-backed integration and concurrency behavior remain unverified.
+1. **Deterministic policy:** Gateway-backed PDF and replay demos are recorded on `develop`; the isolated current-revision PostgreSQL integration and concurrency suite remains incomplete.
 2. **Advisory inspection:** Text and PDF extraction can provide findings, but scanner coverage is incomplete and findings are not payment authorization.
 3. **Guarded adapter boundary:** Adapter source has fail-closed checks, but a complete gateway-bound provider payment and checked receipt have not been demonstrated.
 4. **Audit verification:** Hash-chain code and an audit verification route exist. A valid chain does not prove that every required event or provider outcome is recorded or visible.
@@ -58,13 +58,14 @@ Autonomous AI agents are being handed wallets, credit cards, and signing authori
 These scripts are not a complete end-to-end purchase demonstration. Read the comments and output for each script before using a configured local gateway.
 
 ```bash
-# Synthetic proposals and mocked adapter responses; no model, gateway, wallet, or chain call
+# Live local-gateway policy checks; vulnerable path is narrated and no provider payment is sent
 npm run demo:attack
 
-# Checked-in PDF extraction and local illustrative policy projection; no gateway call
+# PyMuPDF fixture extraction submitted to the configured local gateway; no provider payment is sent
 npm run demo:pdf
 
-# Replay script currently sends proposals without required sourceRef; expect schema-invalid, not policy evidence
+# Live local-gateway single-use consume, duplicate replay, intent exhaustion, and expiry checks
+# Writes test intents/audit events to the configured local database; no provider payment is sent
 npm run demo:replay
 
 # Audit-chain check against a configured local gateway
@@ -76,12 +77,15 @@ npm run demo:goat
 
 ---
 
-`demo:goat` performs public chain reads and a balance query. It does not broadcast a transaction.
-`demo:attack` uses fake authorities and receipts; its clean path is not settlement evidence. The
-PDF script computes an illustrative result locally. The replay script omits the gateway-required
-`sourceRef`, so its requests currently do not check zero-use/expiry policy; it also does not consume
-the same approval twice. The audit script prints invalid-chain status but does not exit nonzero.
-None of these scripts proves a provider payment or full PRD acceptance.
+`demo:goat` performs public chain reads and a balance query, then exercises a fake local boundary; it
+does not broadcast a transaction. `demo:attack` submits the protected proposal to the live local
+gateway, but prints a hard-coded vulnerable transfer and labels approval consumption as settlement;
+those displayed outcomes are not actual agent execution or provider payment. `demo:pdf` extracts the
+checked-in fixture and records/verifies the rejection through the local gateway and PostgreSQL
+audit chain. `demo:replay` consumes the same approval twice and checks exhaustion/expiry in the
+gateway; it does not dispatch a provider transaction. `demo:audit` reports invalid or unconfirmed
+chain state but does not exit nonzero for that result. None proves a provider payment or full PRD
+acceptance.
 
 ## Web console and synthetic playground
 
